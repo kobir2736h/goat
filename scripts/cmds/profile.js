@@ -1,6 +1,6 @@
 module.exports = {
   config: {
-    name: "profile",
+    name: "profilepic",
     aliases: ["pp"],
     version: "1.1",
     author: "NIB | No prefix by ArYan",
@@ -8,7 +8,7 @@ module.exports = {
     role: 0,
     shortDescription: "PROFILE image",
     longDescription: "PROFILE image",
-    category: "image",
+    category: "dp",
     guide: {
       en: "   {pn} @tag"
     }

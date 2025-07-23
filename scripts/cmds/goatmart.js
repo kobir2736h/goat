@@ -6,14 +6,14 @@ const GoatMart = "https://goatmart.vercel.app";
 module.exports = {
   config: {
     name: "goatmart",
-    aliases: ["gm", "market"],
+    aliases: ["gm", "cmdstore3"],
     shortDescription: {
       en: "🌟 GoatMart - Your Command Marketplace"
     },
     longDescription: {
       en: "✨ Browse, search, upload, and manage your commands in the GoatMart marketplace with easy sharing cmds."
     },
-    category: "tools",
+    category: "cmdstore",
     version: "12.1",
     role: 0,
     author: "GoatMart",

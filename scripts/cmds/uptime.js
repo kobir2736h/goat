@@ -10,7 +10,7 @@ author: "Kawsar",
 cooldowns: 3,
 description: { en: "Shows bot uptime & auto-pings host to keep alive" },
 category: "system",
-guide: { en: "{pn} [status]" }
+guide: { en: "{pn}" }
 },
 
 // বট অন হলে চালু হবে — host link auto-ping system

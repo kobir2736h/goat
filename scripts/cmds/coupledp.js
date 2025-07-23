@@ -4,7 +4,6 @@ const fs = require("fs-extra");
 module.exports = {
  config: {
  name: "coupledp",
- aliases: ["coupledp"],
  version: "1.0",
  author: "Loid Butter",
  countDown: 5,
@@ -15,7 +14,7 @@ module.exports = {
  longDescription: {
  en: "couple dp"
  },
- category: "image",
+ category: "dp",
  guide: {
  en: "{pn}"
  }

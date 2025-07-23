@@ -48,3 +48,14 @@ https://www.google.com/recaptcha/admin/create
 https://betterstack.com/better-uptime
 ```
 
+
+render dploy 
+
+build command
+```bash
+npm install && pip install -r requirements.txt
+```
+start command
+```bash
+node index.js
+```

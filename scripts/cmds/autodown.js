@@ -10,7 +10,7 @@ module.exports = {
     author: "Nazrul",
     role: 0,
     description: "Auto-download media from any  platform",
-    category: "media",
+    category: "dwonload",
     guide: { en: "Send any media link" }
   },
 

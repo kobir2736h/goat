@@ -9,7 +9,7 @@ module.exports = {
     role: 2,
     shortDescription: "Execute shell commands",
     longDescription: "",
-    category: "𝗢𝗪𝗡𝗘𝗥",
+    category: "owner",
     guide: {
       vi: "{p}{n} <command>",
       en: "{p}{n} <command>"
