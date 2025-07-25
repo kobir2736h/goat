@@ -11,9 +11,9 @@ module.exports = {
  longDescription: {
  en: "Mention a user using their name",
  },
- category: "group",
+ category: "group helper",
  guide: {
- en: "{p}mention <name> [text]",
+ en: "{pn} <name> [text]",
  },
  },
  onStart: async function ({ event, message, args, usersData }) {

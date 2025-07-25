@@ -24,7 +24,7 @@ module.exports = {
     role: 1,
     shortDescription: "",
     longDescription: "anti gc admin: If someone removes you from admin, the bot will add you again as admin. If the bot is removed from admin, moye moye.",
-    category: "box",
+    category: "group helper",
     guide: "{pn} off or on - current state always on.",
   },
 

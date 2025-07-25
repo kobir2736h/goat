@@ -11,7 +11,7 @@ module.exports = {
 			vi: "Bật tắt chức năng chống thành viên đổi thông tin box chat của bạn",
 			en: "Turn on/off anti change info box"
 		},
-		category: "box chat",
+		category: "group helper",
 		guide: {
 			en: "   {pn} avt [on | off]: anti change avatar box chat"
 				+ "\n   {pn} name [on | off]: anti change name box chat"

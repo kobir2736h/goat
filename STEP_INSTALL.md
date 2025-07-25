@@ -29,13 +29,18 @@ npm install
 * Download extension `Cookie Editor` from chrom web store, then go to https://facebook.com, open that extension and click `Export` -> `Export as JSON`
 * Then back to replit, open file `account.txt` and paste your cookie there
 ---
-* Go to https://console.cloud.google.com/ to create a new project (don't forget to **`public`** your project) and add Authorized redirect URIs: `https://developers.google.com/oauthplayground` (without backslash at the end), then go to https://developers.google.com/oauthplayground to create a new OAuth 2.0 Client ID with permission: `https://www.googleapis.com/auth/drive` and `https://mail.google.com` then copy your `Refresh token` `Client ID` and `Client Secret` to `config.json` in part `credentials` -> `google`
+* Go to
 ```
 https://console.cloud.google.com/
 ```
+to create a new project (don't forget to **`public`** your project) and
+ add Authorized redirect URIs: 
+
 ```
 https://developers.google.com/oauthplayground
 ```
+ (without backslash at the end), then go to https://developers.google.com/oauthplayground to create a new OAuth 2.0 Client ID with permission: `https://www.googleapis.com/auth/drive` and `https://mail.google.com` then copy your `Refresh token` `Client ID` and `Client Secret` to `config.json` in part `credentials` -> `google`
+
 * Go to https://www.google.com/recaptcha/admin/create to create a new reCAPTCHA v2 with `I'm not a robot checkbox`
 * Add domain **`repl.co`** (not repl.com) to your reCAPTCHA v2 
 * Accept the reCAPTCHA v2 terms of service 

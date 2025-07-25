@@ -6,12 +6,10 @@ module.exports = {
 		countDown: 5,
 		role: 1,
 		description: {
-			vi: "Tag tất cả thành viên trong nhóm chat của bạn",
 			en: "Tag all members in your group chat"
 		},
-		category: "box chat",
+		category: "group helper",
 		guide: {
-			vi: "   {pn} [nội dung | để trống]",
 			en: "   {pn} [content | empty]"
 		}
 	},

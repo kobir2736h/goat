@@ -4,14 +4,14 @@ module.exports = {
     version: "1.4",
     author: "Kawsar",
     countDown: 5,
-    role: 0,
+    role: 2,
     shortDescription: {
       en: "Kick or leave group"
     },
     description: {
       en: "Kick members if reply/mention or bot leaves group"
     },
-    category: "group",
+    category: "group helper",
     guide: {
       en: "{pn} [reply | @mention | all | @everyone]"
     }
