@@ -2,65 +2,78 @@ const fs = require("fs");
 const { exec } = require("child_process");
 
 const configPath = __dirname + "/gemini_config.json";
+const contextPath = __dirname + "/gemini_context.json";
 
-// ⛳ fallback config
+// 🎭 AI Persona
+const defaultPersona = `
+You are Sohana, a 16-year-old naughty, sarcastic teenage girl from Rangpur.
+You always reply in a playful, witty tone with 1-2 emojis matching the topic.
+Never exceed 12 words. Never explain anything. Treat everyone as one person.
+Match user's language (Bangla/English). You're not AI. You're a girl chatting.
+`;
+
+// 🔢 Max context messages to store
+const maxContext = 50;
+
+// 🗂️ fallback config
 if (!fs.existsSync(configPath)) {
   fs.writeFileSync(configPath, JSON.stringify({ enabled: false }, null, 2));
+}
+if (!fs.existsSync(contextPath)) {
+  fs.writeFileSync(contextPath, JSON.stringify([], null, 2));
 }
 
 module.exports = {
   config: {
     name: "gemini2",
-    version: "2.0",
+    version: "3.0",
     author: "Kawsar",
     cooldowns: 3,
-    description: { en: "Gemini AI toggle & chat" },
+    description: { en: "Gemini AI (Sohana) auto-reply with context" },
     category: "ai",
     guide: { en: "{pn} on/off" }
   },
 
-  // 🟢 Main logic for toggle
+  // 🔘 AI Toggle
   onStart: async function ({ message, args }) {
-    const input = args[0];
-    if (!input) return message.reply("⚠️ Use: gemini on/off");
+    const input = args[0]?.toLowerCase();
+    if (!input || !["on", "off"].includes(input))
+      return message.reply("⚠️ Use: gemini on/off");
 
-    const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-
-    if (input.toLowerCase() === "on") {
-      config.enabled = true;
-      fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
-      return message.reply("✅ Gemini AI auto-reply is now ON.");
-    }
-
-    if (input.toLowerCase() === "off") {
-      config.enabled = false;
-      fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
-      return message.reply("⛔ Gemini AI auto-reply is now OFF.");
-    }
-
-    message.reply("⚠️ Invalid input. Use `on` or `off`.");
+    const config = { enabled: input === "on" };
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    return message.reply(config.enabled
+      ? "✅ Gemini AI is now ON (Sohana mode)"
+      : "⛔ Gemini AI is now OFF.");
   },
 
-  // 📩 Reply to every message when ON
-  onChat: async function ({ event, message, args }) {
+  // 💬 AI Auto Reply (with context)
+  onChat: async function ({ event, message }) {
     const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-    const userMessage = event.body;
+    const userMessage = event.body?.trim();
+    if (!config.enabled || !userMessage || userMessage.length < 2) return;
 
-    if (!config.enabled || !userMessage) return;
+    // 🧠 Load and update last 50 context messages
+    let context = [];
+    if (fs.existsSync(contextPath)) {
+      context = JSON.parse(fs.readFileSync(contextPath, "utf-8"));
+    }
+    context.push(userMessage);
+    if (context.length > maxContext) context = context.slice(-maxContext);
+    fs.writeFileSync(contextPath, JSON.stringify(context, null, 2));
 
-    // ✅ Optional: add filter words if needed
-    if (userMessage.length < 2) return;
-
-    // 🔁 Add 2s delay
     await new Promise(r => setTimeout(r, 2000));
 
-    // 🧠 Call Python API
-    exec(`python3 gemini_api.py "${userMessage.replace(/"/g, '\\"')}"`, (err, stdout, stderr) => {
+    const escapedMessage = userMessage.replace(/"/g, '\\"');
+    const escapedPrompt = defaultPersona.replace(/"/g, '\\"').replace(/\n/g, "\\n");
+    const contextText = context.map(line => `User: ${line}`).join("\\n");
+
+    const command = `python3 gemini_api.py "${escapedMessage}" "${escapedPrompt}" "${contextText}"`;
+
+    exec(command, (err, stdout, stderr) => {
       if (err || stderr) return;
       const reply = stdout.trim();
-      if (reply.length > 0) {
-        message.reply(reply);
-      }
+      if (reply.length > 0) message.reply(reply);
     });
   }
 };

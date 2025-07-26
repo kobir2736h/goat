@@ -12,7 +12,7 @@ module.exports.config = {
     en: "Commands Store of Dipto",
   },
   countDown: 3,
-  category: "command",
+  category: "cmdstore",
   guide: {
     en: "{pn} [command name | single character | page number]",
   },
