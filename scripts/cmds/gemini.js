@@ -16,7 +16,7 @@ module.exports = {
     if (!userInput) return message.reply("❌ Please provide a message to ask Gemini.");
 
     // 🟢 Render-compatible path: run from project root
-    exec(`python3 gemini_api.py "${userInput.replace(/"/g, '\\"')}"`, (err, stdout, stderr) => {
+    exec(`python3 gemini.py "${userInput.replace(/"/g, '\\"')}"`, (err, stdout, stderr) => {
       if (err || stderr) return message.reply("❌ Error:\n" + (stderr || err.message));
       message.reply(stdout.trim());
     });
