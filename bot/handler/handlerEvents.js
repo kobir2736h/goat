@@ -236,80 +236,59 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
 				commandName = command.config.name; */
 
 
-            if (!body) return;
-            
-            const dateNow = Date.now();
-            const args = body.trim().split(/ +/);
-            let commandName;
-            let command;
-            
-            // ——————— PREFIX সহ কমান্ড চেক ——————— //
-            if (body.startsWith(prefix)) {
-              commandName = args.shift().slice(prefix.length).toLowerCase();
-            
-              // কমান্ড বা alias দিয়ে খুঁজে পাওয়া
-              command = GoatBot.commands.get(commandName) || GoatBot.commands.get(GoatBot.aliases.get(commandName));
-            
-              // গ্রুপ আলিয়াস চেক
-              const aliasesData = threadData.data.aliases || {};
-              for (const cmdName in aliasesData) {
-                if (aliasesData[cmdName].includes(commandName)) {
-                  command = GoatBot.commands.get(cmdName);
-                  break;
-                }
-              }
-            
-              // যদি কমান্ড না মেলে, এবং hideNotiMessage.commandNotFound false থাকে, তাহলে error message পাঠাও
-              if (!command) {
-                if (!hideNotiMessage.commandNotFound) {
-                  return await message.reply(
-                    commandName
-                      ? utils.getText({ lang: langCode, head: "handlerEvents" }, "commandNotFound", commandName, prefix)
-                      : utils.getText({ lang: langCode, head: "handlerEvents" }, "commandNotFound2", prefix)
-                  );
-                } else return;
-              }
-            }
-            // ——————— PREFIX:false (prefix ছাড়া) কমান্ড চেক ——————— //
-            else {
-              const firstWord = args[0]?.toLowerCase();
-            
-              // prefix:false কমান্ড গুলো বের করো
-              const noPrefixCommands = [...GoatBot.commands.values()].filter(cmd => cmd.config.prefix === false);
-            
-              // গ্রুপ আলিয়াস
-              const aliasesData = threadData.data.aliases || {};
-            
-              for (const cmd of noPrefixCommands) {
-                const cmdName = cmd.config.name;
-                if (
-                  cmdName === firstWord ||
-                  (aliasesData[cmdName] && aliasesData[cmdName].includes(firstWord))
-                ) {
-                  command = cmd;
-                  commandName = cmdName;
-                  args.shift(); // command name বাদ দাও args থেকে
-                  break;
-                }
-              }
-            }
-            
-            // ——————— যদি কমান্ড মেলে, তাহলে চালাও ——————— //
-            if (command) {
-              // command.config.name দিয়ে নিশ্চিত হওয়া
-              commandName = command.config.name;
-            
-              // কমান্ড চালানোর জন্য প্রয়োজনীয় ডাটা পাঠাও
-              return await command.onStart({
-                api,
-                event,
-                args,
-                message,
-                commandName,
-                // অন্য প্রয়োজনীয় ডাটা এখানে দিতে পারো
-              });
-            }
-
+           if (!body) return;
+           
+           const prefixRegex = new RegExp(`^(${prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'i');
+           let commandName, args;
+           let command;
+           
+           // ——————— Prefix ছাড়া কমান্ড চেক ——————— //
+           if (!prefixRegex.test(body)) {
+             const commandNameNoPrefix = body.split(' ')[0].toLowerCase();
+             const commandNoPrefix = GoatBot.commands.get(commandNameNoPrefix);
+           
+             if (!commandNoPrefix || commandNoPrefix.config.prefix !== false) return;
+           
+             command = commandNoPrefix;
+             commandName = commandNameNoPrefix;
+             args = body.trim().split(/ +/).slice(1);
+           }
+           // ——————— Prefix সহ কমান্ড চেক ——————— //
+           else {
+             const [matchedPrefix] = body.match(prefixRegex);
+             args = body.slice(matchedPrefix.length).trim().split(/ +/);
+             commandName = args.shift().toLowerCase();
+           
+             command = GoatBot.commands.get(commandName) || GoatBot.commands.get(GoatBot.aliases.get(commandName));
+           
+             // গ্রুপ আলিয়াস চেক
+             const aliasesData = threadData.data.aliases || {};
+             for (const cmdName in aliasesData) {
+               if (aliasesData[cmdName].includes(commandName)) {
+                 command = GoatBot.commands.get(cmdName);
+                 break;
+               }
+             }
+           
+             // যদি কমান্ড না মেলে তাহলে not found message
+             if (!command) {
+               if (!hideNotiMessage.commandNotFound)
+                 return await message.reply(
+                   commandName
+                     ? utils.getText({ lang: langCode, head: "handlerEvents" }, "commandNotFound", commandName, prefix)
+                     : utils.getText({ lang: langCode, head: "handlerEvents" }, "commandNotFound2", prefix)
+                 );
+               else return;
+             }
+           }
+           
+           // ————————————— SET COMMAND NAME ————————————— //
+           if (command) commandName = command.config.name;
+               
+                
+                  
+           
+                      
 
             	
 
