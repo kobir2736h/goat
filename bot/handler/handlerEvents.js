@@ -256,7 +256,7 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
 			if (isBannedOrOnlyAdmin(userData, threadData, senderID, threadID, isGroup, commandName, message, langCode))
 				return;
 
-	/*
+	
 			if (!command)
 				if (!hideNotiMessage.commandNotFound)
 					return await message.reply(
@@ -266,35 +266,13 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
 					);
 				else
 					return true;
-					*/
+					
 
-             const stringSimilarity = require("string-similarity");
+            
+         
              
-             // শুধু prefix দিলে (কমান্ড নাম খালি)
-             if (!commandName) {
-               return await message.reply(`⚠️ Please enter a command after prefix. Example: "${prefix}help"`);
-             }
              
-             // ভুল কমান্ড দিলে
-             const mainCommands = Array.from(GoatBot.commands.keys());
-             const botAliases = Array.from(GoatBot.aliases.keys());
-             const groupAliases = [];
-             const aliasesData = threadData?.data?.aliases || {};
-             for (const cmdName in aliasesData) {
-               groupAliases.push(...aliasesData[cmdName]);
-             }
-             const allPossibleCommands = [...new Set([...mainCommands, ...botAliases, ...groupAliases])];
-             
-             const bestMatch = stringSimilarity.findBestMatch(commandName, allPossibleCommands).bestMatch;
-             const closest = bestMatch.rating > 0.3 ? bestMatch.target : null;
-             
-             if (!hideNotiMessage.commandNotFound) {
-               return await message.reply(
-                 closest
-                   ? `❌ The command "${commandName}" was not found.\n🔎 Did you mean "${prefix}${closest}"?\n📘 Use "${prefix}help" to see available commands.`
-                   : `❌ Unknown command "${commandName}".\n📘 Use "${prefix}help" to see available commands.`
-               );
-             } else return true;
+          
 
 
 
