@@ -213,10 +213,30 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
 		let isUserCallCommand = false;
 		async function onStart() {
 			// —————————————— CHECK USE BOT —————————————— //
-			if (!body || !body.startsWith(prefix))
+		/*	if (!body || !body.startsWith(prefix))
 				return;
 			const dateNow = Date.now();
 			const args = body.slice(prefix.length).trim().split(/ +/);
+     */
+
+     const commandName = body.split(" ")[0].replace(prefix, "").toLowerCase();
+     const command = global.GoatBot.commands.get(commandName);
+     
+     if (!command) return;
+     
+     // 👇 এইখানেই prefix checker বসালাম
+     if (command.config?.prefix !== false) {
+       if (!body || !body.startsWith(prefix)) return;
+     }
+     
+     // সময় ধরছি (cooldown ইত্যাদি কাজে লাগবে)
+     const dateNow = Date.now();
+     
+     // args বানালাম (যদি prefix না লাগে, তাও কাজ করবে কারণ আগেই handle করে ফেলছি)
+     const args = body.slice(body.startsWith(prefix) ? prefix.length : 0).trim().split(/ +/);
+  
+
+
 			// ————————————  CHECK HAS COMMAND ——————————— //
 			let commandName = args.shift().toLowerCase();
 			let command = GoatBot.commands.get(commandName) || GoatBot.commands.get(GoatBot.aliases.get(commandName));
