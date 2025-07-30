@@ -8,7 +8,7 @@ module.exports = {
     author: "GoatMart",
     countDown: 5,
     role: 0,
-    category: "media",
+    category: "attachment",
     longDescription: {
       en: "Convert image/video/audio/gifs  into link.",
     },

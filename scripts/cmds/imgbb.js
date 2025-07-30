@@ -9,7 +9,7 @@ module.exports = {
     countDown: 5,
     role: 0,
     longDescription: { en: "Upload image to imgbb and get the URL." },
-    category: "image",
+    category: "attachment",
   },
   onStart: async function({ message, event }) {
     try {

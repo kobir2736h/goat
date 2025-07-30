@@ -1040,7 +1040,7 @@ async function startBot(loginWithEmail) {
 						storage5Message.shift();
 				}
 
-				if (configLog.disableAll === false && configLog[event.type] !== false) {
+			/*	if (configLog.disableAll === false && configLog[event.type] !== false) {
 					// hide participantIDs (it is array too long)
 					const participantIDs_ = [...event.participantIDs || []];
 					if (event.participantIDs)
@@ -1050,6 +1050,30 @@ async function startBot(loginWithEmail) {
 
 					if (event.participantIDs)
 						event.participantIDs = participantIDs_;
+				}*/
+
+				if (configLog.disableAll === false && configLog[event.type] !== false) {
+				  const pad = (label) => label.padEnd(15, ' ');
+				  const bold = (txt) => `\u001b[1m${txt}\u001b[22m`;
+				
+				  // Sender Name
+				  const senderName = await usersData.getName(event.senderID).catch(() => "Unknown");
+				  // Thread Name
+				  const threadInfo = await threadsData.get(event.threadID).catch(() => null);
+				  const threadName = threadInfo?.threadInfo?.threadName || "Unknown";
+				
+				  console.log(`${bold(pad("TYPE:"))} ${event.type || "N/A"}`);
+				  console.log(`${bold(pad("BODY:"))} ${event.body || "No text ❌"}`);
+				  console.log(`${bold(pad("SENDER NAME:"))} ${senderName}`);
+				  console.log(`${bold(pad("THREAD NAME:"))} ${threadName}`);
+				
+				  if (event.attachments?.length > 0) {
+				    console.log(`${bold(pad("ATTACHMENTS:"))}`);
+				    event.attachments.forEach((att, i) => {
+				      console.log(`     │𖣘 Type: ${att.type}`);
+				      console.log(`     │𖣘 URL : ${att.url || 'no url'}`);
+				    });
+				  }
 				}
 
 				if ((event.senderID && dataGban[event.senderID] || event.userID && dataGban[event.userID])) {

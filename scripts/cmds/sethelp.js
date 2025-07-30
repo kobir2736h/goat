@@ -11,7 +11,7 @@ module.exports = {
 		},
 		category: "change",
 		guide: {
-			en: "{pn} [name | category]"
+			en: "{pn} [n | c]"
 		}
 	},
 
@@ -27,11 +27,11 @@ module.exports = {
 	},
 
 	onStart: async function ({ message, event, args, threadsData, getLang }) {
-		if (args[0] == "name") {
+		if (args[0] == "n") {
 			await threadsData.set(event.threadID, "name", "settings.sortHelp");
 			message.reply(getLang("savedName"));
 		}
-		else if (args[0] == "category") {
+		else if (args[0] == "c") {
 			threadsData.set(event.threadID, "category", "settings.sortHelp");
 			message.reply(getLang("savedCategory"));
 		}

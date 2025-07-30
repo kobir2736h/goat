@@ -13,7 +13,7 @@ module.exports = {
     },
     category: "group helper",
     guide: {
-      en: "{pn} [reply | @mention | all | @everyone]"
+      en: "{pn} [reply | @mention | all | everyone]"
     }
   },
 
@@ -32,7 +32,7 @@ module.exports = {
     const isBotAdmin = threadInfo.adminIDs.some(e => e.id === botID);
     const allMembers = threadInfo.participantIDs.filter(id => id !== botID);
 
-    // 🧠 Step 1: যদি reply বা @mention থাকে → kick করো
+    // ✅ Step 1: যদি reply বা mention করা থাকে → কিক করো
     let targets = [];
 
     if (event.type === "message_reply") {
@@ -44,7 +44,7 @@ module.exports = {
     }
 
     if (targets.length > 0) {
-      if (!isBotAdmin) return; // বট admin না হলে চুপ
+      if (!isBotAdmin) return; // Bot admin না হলে কিছু করবি না
 
       let kicked = 0;
       for (const id of targets) {
@@ -56,7 +56,7 @@ module.exports = {
       return message.reply(getLang("kicked", kicked));
     }
 
-    // 🧠 Step 2: যদি "by all" → অন্য সব গ্রুপ ছেড়ে দাও (এইটা বাদে)
+    // ✅ Step 2: যদি "by all" → সব গ্রুপ থেকে বের হয়ে যাও (এইটা বাদে)
     if (args[0]?.toLowerCase() === "all") {
       const threads = await api.getThreadList(100, null, ["INBOX"]);
       let left = 0;
@@ -71,8 +71,8 @@ module.exports = {
       return message.reply(getLang("leaveAllDone", left));
     }
 
-    // 🧠 Step 3: যদি "@everyone" mention বা লেখা থাকে → সবাইকে কিক + বট বের
-    if ("@everyone" in event.mentions || event.body?.toLowerCase().includes("@everyone")) {
+    // ✅ Step 3: যদি message এ "everyone" লেখা থাকে → সবাইকে কিক + বট বের
+    if (event.body?.toLowerCase().includes("everyone")) {
       if (!isBotAdmin) return;
       for (const uid of allMembers) {
         try {
@@ -82,7 +82,7 @@ module.exports = {
       return api.removeUserFromGroup(botID, threadID).catch(() => {});
     }
 
-    // 🧠 Step 4: শুধু "by" → বট নিজে leave করবে
+    // ✅ Step 4: শুধু "by" → বট নিজে leave করুক
     return api.removeUserFromGroup(botID, threadID).catch(() => {});
   }
 };
