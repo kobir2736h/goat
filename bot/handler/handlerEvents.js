@@ -217,25 +217,7 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
 				return;
 			const dateNow = Date.now();
 			const args = body.slice(prefix.length).trim().split(/ +/);
-     */
-
-            // Step 1: Command নাম বের কর
-            const commandName = body.split(" ")[0].replace(prefix, "").toLowerCase();
-            const command = global.GoatBot.commands.get(commandName);
-            
-            // Step 2: যদি command না মিলে, থেমে যা
-            if (!command) return;
-            
-            // Step 3: এখন prefix চেক কর
-            if (command.config?.prefix !== false) {
-              // prefix দরকার, কিন্তু নাই → থেমে যা
-              if (!body.startsWith(prefix)) return;
-            }
-            
-            // Step 4: args বানাও (prefix থাকলে বাদ দিয়ে, না থাকলে সরাসরি)
-            const args = body.slice(body.startsWith(prefix) ? prefix.length : 0).trim().split(/ +/);
-  
-
+   
 
 			// ————————————  CHECK HAS COMMAND ——————————— //
 			let commandName = args.shift().toLowerCase();
@@ -247,10 +229,53 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
 					command = GoatBot.commands.get(cmdName);
 					break;
 				}
-			}
-			// ————————————— SET COMMAND NAME ————————————— //
+			} */
+
+           const dateNow = Date.now();
+           let commandName, command;
+           
+           // যদি noPrefix allow করা থাকে তাহলে prefix ছাড়া command ও detect হবে
+           if (body) {
+             const splitBody = body.trim().split(/\s+/);
+             const firstWord = splitBody[0]?.toLowerCase();
+           
+             for (const [name, value] of GoatBot.commands) {
+               if (
+                 (firstWord === prefix + name || firstWord === name && value.config.prefix === false)
+                 || GoatBot.aliases.get(firstWord) === name
+               ) {
+                 commandName = name;
+                 command = value;
+                 break;
+               }
+             }
+           
+             // যদি group এ custom alias সেট করা থাকে
+             if (!command && threadData?.data?.aliases) {
+               const aliasesData = threadData.data.aliases;
+               for (const name in aliasesData) {
+                 if (aliasesData[name].includes(firstWord)) {
+                   commandName = name;
+                   command = GoatBot.commands.get(name);
+                   break;
+                 }
+               }
+             }
+           }
+           
+           const args = body?.replace(prefix, "").trim().split(/\s+/).slice(1) || [];
+
+
+
+           
+
+
+			
+		/*	// ————————————— SET COMMAND NAME ————————————— //
 			if (command)
-				commandName = command.config.name;
+				commandName = command.config.name; */
+
+				
 			// ——————— FUNCTION REMOVE COMMAND NAME ———————— //
 			function removeCommandNameFromBody(body_, prefix_, commandName_) {
 				if (arguments.length) {
