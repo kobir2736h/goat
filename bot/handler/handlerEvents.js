@@ -219,21 +219,21 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
 			const args = body.slice(prefix.length).trim().split(/ +/);
      */
 
-     const commandName = body.split(" ")[0].replace(prefix, "").toLowerCase();
-     const command = global.GoatBot.commands.get(commandName);
-     
-     if (!command) return;
-     
-     // 👇 এইখানেই prefix checker বসালাম
-     if (command.config?.prefix !== false) {
-       if (!body || !body.startsWith(prefix)) return;
-     }
-     
-     // সময় ধরছি (cooldown ইত্যাদি কাজে লাগবে)
-     const dateNow = Date.now();
-     
-     // args বানালাম (যদি prefix না লাগে, তাও কাজ করবে কারণ আগেই handle করে ফেলছি)
-     const args = body.slice(body.startsWith(prefix) ? prefix.length : 0).trim().split(/ +/);
+            // Step 1: Command নাম বের কর
+            const commandName = body.split(" ")[0].replace(prefix, "").toLowerCase();
+            const command = global.GoatBot.commands.get(commandName);
+            
+            // Step 2: যদি command না মিলে, থেমে যা
+            if (!command) return;
+            
+            // Step 3: এখন prefix চেক কর
+            if (command.config?.prefix !== false) {
+              // prefix দরকার, কিন্তু নাই → থেমে যা
+              if (!body.startsWith(prefix)) return;
+            }
+            
+            // Step 4: args বানাও (prefix থাকলে বাদ দিয়ে, না থাকলে সরাসরি)
+            const args = body.slice(body.startsWith(prefix) ? prefix.length : 0).trim().split(/ +/);
   
 
 
