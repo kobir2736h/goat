@@ -46,6 +46,7 @@
     "qs": "^6.11.0",
     "request": "^2.88.2",
     "searchitunes": "^2.5.4",
+    "string-similarity": "^4.0.4",
     "sequelize": "^6.19.0",
     "socket.io": "^4.5.1",
     "sqlite3": "^5.0.5",

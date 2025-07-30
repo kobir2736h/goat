@@ -212,8 +212,9 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
 		*/
 		let isUserCallCommand = false;
 		async function onStart() {
+
 			// —————————————— CHECK USE BOT —————————————— //
-		/*	if (!body || !body.startsWith(prefix))
+			if (!body || !body.startsWith(prefix))
 				return;
 			const dateNow = Date.now();
 			const args = body.slice(prefix.length).trim().split(/ +/);
@@ -233,68 +234,8 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
            
           	// ————————————— SET COMMAND NAME ————————————— //
 			if (command)
-				commandName = command.config.name; */
-
-
-           if (!body) return;
-           
-           const prefixRegex = new RegExp(`^(${prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'i');
-           let commandName, args;
-           let command;
-           
-           // ——————— Prefix ছাড়া কমান্ড চেক ——————— //
-           if (!prefixRegex.test(body)) {
-             const commandNameNoPrefix = body.split(' ')[0].toLowerCase();
-             const commandNoPrefix = GoatBot.commands.get(commandNameNoPrefix);
-           
-             if (!commandNoPrefix || commandNoPrefix.config.prefix !== false) return;
-           
-             command = commandNoPrefix;
-             commandName = commandNameNoPrefix;
-             args = body.trim().split(/ +/).slice(1);
-           }
-           // ——————— Prefix সহ কমান্ড চেক ——————— //
-           else {
-             const [matchedPrefix] = body.match(prefixRegex);
-             args = body.slice(matchedPrefix.length).trim().split(/ +/);
-             commandName = args.shift().toLowerCase();
-           
-             command = GoatBot.commands.get(commandName) || GoatBot.commands.get(GoatBot.aliases.get(commandName));
-           
-             // গ্রুপ আলিয়াস চেক
-             const aliasesData = threadData.data.aliases || {};
-             for (const cmdName in aliasesData) {
-               if (aliasesData[cmdName].includes(commandName)) {
-                 command = GoatBot.commands.get(cmdName);
-                 break;
-               }
-             }
-           
-             // যদি কমান্ড না মেলে তাহলে not found message
-             if (!command) {
-               if (!hideNotiMessage.commandNotFound)
-                 return await message.reply(
-                   commandName
-                     ? utils.getText({ lang: langCode, head: "handlerEvents" }, "commandNotFound", commandName, prefix)
-                     : utils.getText({ lang: langCode, head: "handlerEvents" }, "commandNotFound2", prefix)
-                 );
-               else return;
-             }
-           }
-           
-           // ————————————— SET COMMAND NAME ————————————— //
-           if (command) commandName = command.config.name;
-               
-                
-                  
-           
-                      
-
-            	
-
-				
-
-				
+				commandName = command.config.name; 
+                                                                        							
 			// ——————— FUNCTION REMOVE COMMAND NAME ———————— //
 			function removeCommandNameFromBody(body_, prefix_, commandName_) {
 				if (arguments.length) {
@@ -314,6 +255,8 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
 			// —————  CHECK BANNED OR ONLY ADMIN BOX  ————— //
 			if (isBannedOrOnlyAdmin(userData, threadData, senderID, threadID, isGroup, commandName, message, langCode))
 				return;
+
+	/*
 			if (!command)
 				if (!hideNotiMessage.commandNotFound)
 					return await message.reply(
@@ -323,6 +266,44 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
 					);
 				else
 					return true;
+					*/
+
+             const stringSimilarity = require("string-similarity");
+             
+             // শুধু prefix দিলে (কমান্ড নাম খালি)
+             if (!commandName) {
+               return await message.reply(`⚠️ Please enter a command after prefix. Example: "${prefix}help"`);
+             }
+             
+             // ভুল কমান্ড দিলে
+             const mainCommands = Array.from(GoatBot.commands.keys());
+             const botAliases = Array.from(GoatBot.aliases.keys());
+             const groupAliases = [];
+             const aliasesData = threadData?.data?.aliases || {};
+             for (const cmdName in aliasesData) {
+               groupAliases.push(...aliasesData[cmdName]);
+             }
+             const allPossibleCommands = [...new Set([...mainCommands, ...botAliases, ...groupAliases])];
+             
+             const bestMatch = stringSimilarity.findBestMatch(commandName, allPossibleCommands).bestMatch;
+             const closest = bestMatch.rating > 0.3 ? bestMatch.target : null;
+             
+             if (!hideNotiMessage.commandNotFound) {
+               return await message.reply(
+                 closest
+                   ? `❌ The command "${commandName}" was not found.\n🔎 Did you mean "${prefix}${closest}"?\n📘 Use "${prefix}help" to see available commands.`
+                   : `❌ Unknown command "${commandName}".\n📘 Use "${prefix}help" to see available commands.`
+               );
+             } else return true;
+
+
+
+
+
+
+          
+
+					
 			// ————————————— CHECK PERMISSION ———————————— //
 			const roleConfig = getRoleConfig(utils, command, isGroup, threadData, commandName);
 			const needRole = roleConfig.onStart;
