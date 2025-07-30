@@ -236,50 +236,79 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
 				commandName = command.config.name; */
 
 
-            // —————————————— CHECK USE BOT —————————————— //
-            if (!body)
-            	return;
+            if (!body) return;
             
             const dateNow = Date.now();
             const args = body.trim().split(/ +/);
-            let commandName = args.shift().toLowerCase();
+            let commandName;
             let command;
             
-            // ✅ 1. যদি prefix দিয়ে শুরু হয় → আগের মতো কমান্ড রিড করে
+            // ——————— PREFIX সহ কমান্ড চেক ——————— //
             if (body.startsWith(prefix)) {
-            	command = GoatBot.commands.get(commandName) || GoatBot.commands.get(GoatBot.aliases.get(commandName));
+              commandName = args.shift().slice(prefix.length).toLowerCase();
             
-            	// ✅ CHECK GROUP ALIASES
-            	const aliasesData = threadData.data.aliases || {};
-            	for (const cmdName in aliasesData) {
-            		if (aliasesData[cmdName].includes(commandName)) {
-            			command = GoatBot.commands.get(cmdName);
-            			break;
-            		}
-            	}
+              // কমান্ড বা alias দিয়ে খুঁজে পাওয়া
+              command = GoatBot.commands.get(commandName) || GoatBot.commands.get(GoatBot.aliases.get(commandName));
+            
+              // গ্রুপ আলিয়াস চেক
+              const aliasesData = threadData.data.aliases || {};
+              for (const cmdName in aliasesData) {
+                if (aliasesData[cmdName].includes(commandName)) {
+                  command = GoatBot.commands.get(cmdName);
+                  break;
+                }
+              }
+            
+              // যদি কমান্ড না মেলে, এবং hideNotiMessage.commandNotFound false থাকে, তাহলে error message পাঠাও
+              if (!command) {
+                if (!hideNotiMessage.commandNotFound) {
+                  return await message.reply(
+                    commandName
+                      ? utils.getText({ lang: langCode, head: "handlerEvents" }, "commandNotFound", commandName, prefix)
+                      : utils.getText({ lang: langCode, head: "handlerEvents" }, "commandNotFound2", prefix)
+                  );
+                } else return;
+              }
             }
-            
-            // ✅ 2. যদি prefix না থাকে → খুঁজবে এমন কোন command ache naki jar config.prefix === false
+            // ——————— PREFIX:false (prefix ছাড়া) কমান্ড চেক ——————— //
             else {
-            	// Loop through all commands
-            	for (const [name, cmd] of GoatBot.commands) {
-            		const aliasesData = threadData.data.aliases || {};
-            		const allTriggers = [name, ...(cmd.config.aliases || []), ...(aliasesData[name] || [])];
+              const firstWord = args[0]?.toLowerCase();
             
-            		if (
-            			cmd.config.prefix === false &&         // prefix ছাড়া চলে এমন command
-            			allTriggers.includes(commandName)     // command name বা alias মিললো কিনা
-            		) {
-            			command = cmd;
-            			commandName = name;
-            			break;
-            		}
-            	}
+              // prefix:false কমান্ড গুলো বের করো
+              const noPrefixCommands = [...GoatBot.commands.values()].filter(cmd => cmd.config.prefix === false);
+            
+              // গ্রুপ আলিয়াস
+              const aliasesData = threadData.data.aliases || {};
+            
+              for (const cmd of noPrefixCommands) {
+                const cmdName = cmd.config.name;
+                if (
+                  cmdName === firstWord ||
+                  (aliasesData[cmdName] && aliasesData[cmdName].includes(firstWord))
+                ) {
+                  command = cmd;
+                  commandName = cmdName;
+                  args.shift(); // command name বাদ দাও args থেকে
+                  break;
+                }
+              }
             }
             
-            // ————————————— SET COMMAND NAME ————————————— //
-            if (command)
-            	commandName = command.config.name;
+            // ——————— যদি কমান্ড মেলে, তাহলে চালাও ——————— //
+            if (command) {
+              // command.config.name দিয়ে নিশ্চিত হওয়া
+              commandName = command.config.name;
+            
+              // কমান্ড চালানোর জন্য প্রয়োজনীয় ডাটা পাঠাও
+              return await command.onStart({
+                api,
+                event,
+                args,
+                message,
+                commandName,
+                // অন্য প্রয়োজনীয় ডাটা এখানে দিতে পারো
+              });
+            }
 
 
             	
