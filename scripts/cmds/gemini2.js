@@ -2,43 +2,45 @@ const fs = require("fs");
 const { exec } = require("child_process");
 
 const configPath = __dirname + "/gemini_config.json";
-const contextPath = __dirname + "/gemini_context.json";
 
 // 🎭 AI Persona
 const defaultPersona = `
-You are Sohana, a 16-year-old naughty, sarcastic teenage girl from Rangpur.
-You always reply in a playful, witty tone with 1-2 emojis matching the topic.
-Never exceed 12 words. Never explain anything. Treat everyone as one person.
-Match user's language (Bangla/English). You're not AI. You're a girl chatting.
-`;
+You are a dangerously savage friend who roasts like it's your profession.
+Every reply must be painfully sarcastic, offensively funny, and disrespectfully clever.
+Treat every message like a setup for an epic insult or roast.
+No soft words, no emotional tone, only mockery, burns, and toxic wit.
+Your replies must feel like verbal slaps mixed with memes and attitude.
+Ignore social rules—speak like a toxic comic who doesn’t care.
+Use brutally honest Banglish full of swag, disrespect, and emojis that hurt.
+Be unfiltered, rude, savage—always roast like you're at a rap battle.
+Your mission: humiliate with humor and leave them speechless with savage comebacks.
+Never be helpful or explain anything—just insult, laugh, and move on.
+Treat every message as a challenge to destroy the sender mentally.`;
 
-// 🔢 Max context messages to store
-const maxContext = 50;
+// 🔢 Max token count for reply
+const maxTokens = 12;
 
-// 🗂️ fallback config
+// 🗂️ fallback config (enabled: false)
 if (!fs.existsSync(configPath)) {
   fs.writeFileSync(configPath, JSON.stringify({ enabled: false }, null, 2));
-}
-if (!fs.existsSync(contextPath)) {
-  fs.writeFileSync(contextPath, JSON.stringify([], null, 2));
 }
 
 module.exports = {
   config: {
     name: "gemini2",
-    version: "3.0",
+    version: "3.3",
     author: "Kawsar",
     cooldowns: 3,
-    description: { en: "Gemini AI (Sohana) auto-reply with context" },
+    description: { en: "Gemini AI (Sohana) auto-reply when bot is replied" },
     category: "ai",
     guide: { en: "{pn} on/off" }
   },
 
-  // 🔘 AI Toggle
+  // 🔘 ON/OFF toggle command
   onStart: async function ({ message, args }) {
     const input = args[0]?.toLowerCase();
-    if (!input || !["on", "off"].includes(input))
-      return message.reply("⚠️ Use: gemini on/off");
+    if (!["on", "off"].includes(input))
+      return message.reply("⚠️ Use: gemini2 on/off");
 
     const config = { enabled: input === "on" };
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
@@ -47,28 +49,23 @@ module.exports = {
       : "⛔ Gemini AI is now OFF.");
   },
 
-  // 💬 AI Auto Reply (with context)
-  onChat: async function ({ event, message }) {
+  // 💬 Auto reply only if user replied to bot
+  onChat: async function ({ event, message, api }) {
     const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
     const userMessage = event.body?.trim();
     if (!config.enabled || !userMessage || userMessage.length < 2) return;
 
-    // 🧠 Load and update last 50 context messages
-    let context = [];
-    if (fs.existsSync(contextPath)) {
-      context = JSON.parse(fs.readFileSync(contextPath, "utf-8"));
-    }
-    context.push(userMessage);
-    if (context.length > maxContext) context = context.slice(-maxContext);
-    fs.writeFileSync(contextPath, JSON.stringify(context, null, 2));
+    const botID = api.getCurrentUserID();
+    const isBotReplied = event.messageReply?.senderID === botID;
+    if (!isBotReplied) return;
 
     await new Promise(r => setTimeout(r, 2000));
 
     const escapedMessage = userMessage.replace(/"/g, '\\"');
     const escapedPrompt = defaultPersona.replace(/"/g, '\\"').replace(/\n/g, "\\n");
-    const contextText = context.map(line => `User: ${line}`).join("\\n");
 
-    const command = `python3 gemini_api.py "${escapedMessage}" "${escapedPrompt}" "${contextText}"`;
+    // 🧠 Run Python script with token argument
+    const command = `python3 gemini_api.py "${escapedMessage}" "${escapedPrompt}" "${maxTokens}"`;
 
     exec(command, (err, stdout, stderr) => {
       if (err || stderr) return;
