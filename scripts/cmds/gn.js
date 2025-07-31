@@ -13,7 +13,7 @@ const axios = require("axios");
 const cheerio = require("cheerio");
 const { Json } = require("sequelize/lib/utils");
 
-const apiKey = "AIzaSyCjHC9xWZQ_SrNjRCuCRAbhdUQfaFwqGec"; //apikey
+const apiKey = "AIzaSyCvmHvTXU7icrv-pTE9Xs8b3H-HpqEzFBQ"; //apikey
 const genAI = new GoogleGenerativeAI(apiKey);
 const fileManager = new GoogleAIFileManager(apiKey);
 

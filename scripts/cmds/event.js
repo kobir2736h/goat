@@ -17,15 +17,11 @@ module.exports = {
 		countDown: 5,
 		role: 2,
 		description: {
-			vi: "Quản lý các tệp lệnh event của bạn",
+			
 			en: "Manage your event command files"
 		},
 		category: "command",
 		guide: {
-			vi: "{pn} load <tên file lệnh>"
-				+ "\n{pn} loadAll"
-				+ "\n{pn} install <url> <tên file lệnh>: Tải về và load command event, url là đường dẫn tới file lệnh (raw)"
-				+ "\n{pn} install <code> <tên file lệnh>: Tải về và load command event, code là mã của file lệnh (raw)",
 			en: "{pn} load <command file name>"
 				+ "\n{pn} loadAll"
 				+ "\n{pn} install <url> <command file name>: Download and load event command, url is the path to the command file (raw)"
@@ -34,26 +30,6 @@ module.exports = {
 	},
 
 	langs: {
-		vi: {
-			missingFileName: "⚠️ | Vui lòng nhập vào tên lệnh bạn muốn reload",
-			loaded: "✅ | Đã load event command \"%1\" thành công",
-			loadedError: "❌ | Load event command \"%1\" thất bại với lỗi\n%2: %3",
-			loadedSuccess: "✅ | Đã load thành công \"%1\" event command",
-			loadedFail: "❌ | Load thất bại event command \"%1\"\n%2",
-			missingCommandNameUnload: "⚠️ | Vui lòng nhập vào tên lệnh bạn muốn unload",
-			unloaded: "✅ | Đã unload event command \"%1\" thành công",
-			unloadedError: "❌ | Unload event command \"%1\" thất bại với lỗi\n%2: %3",
-			missingUrlCodeOrFileName: "⚠️ | Vui lòng nhập vào url hoặc code và tên file lệnh bạn muốn cài đặt",
-			missingUrlOrCode: "⚠️ | Vui lòng nhập vào url hoặc code của tệp lệnh bạn muốn cài đặt",
-			missingFileNameInstall: "⚠️ | Vui lòng nhập vào tên file để lưu lệnh (đuôi .js)",
-			invalidUrlOrCode: "⚠️ | Không thể lấy được mã lệnh",
-			alreadExist: "⚠️ | File lệnh đã tồn tại, bạn có chắc chắn muốn ghi đè lên file lệnh cũ không?\nThả cảm xúc bất kì vào tin nhắn này để tiếp tục",
-			installed: "✅ | Đã cài đặt event command \"%1\" thành công, file lệnh được lưu tại %2",
-			installedError: "❌ | Cài đặt event command \"%1\" thất bại với lỗi\n%2: %3",
-			missingFile: "⚠️ | Không tìm thấy tệp lệnh \"%1\"",
-			invalidFileName: "⚠️ | Tên tệp lệnh không hợp lệ",
-			unloadedFile: "✅ | Đã unload lệnh \"%1\""
-		},
 		en: {
 			missingFileName: "⚠️ | Please enter the command name you want to reload",
 			loaded: "✅ | Loaded event command \"%1\" successfully",
@@ -194,7 +170,7 @@ module.exports = {
 			else {
 				const infoLoad = loadScripts("events", fileName, log, configCommands, api, threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData, getLang, rawCode);
 				infoLoad.status == "success" ?
-					message.reply(getLang("installed", infoLoad.name, path.join(__dirname, fileName).replace(process.cwd(), ""))) :
+					message.reply(getLang("installed", infoLoad.name, path.join(__dirname, "..", "events", fileName).replace(process.cwd(), ""))) :
 					message.reply(getLang("installedError", infoLoad.name, infoLoad.error.name, infoLoad.error.message));
 			}
 		}

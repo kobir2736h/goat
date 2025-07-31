@@ -23,12 +23,6 @@
     },
     "rankup": {
       "deltaNext": 5
-    },
-    "appstore": {
-      "limitResult": 3
-    },
-    "dhbc": {
-      "reward": 1000
     }
   },
   "envEvents": {
