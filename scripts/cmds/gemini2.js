@@ -3,21 +3,13 @@ const { exec } = require("child_process");
 
 const configPath = __dirname + "/gemini_config.json";
 
-// 🎭 AI Persona
+// 🎭 AI Persona (fixed)
 const defaultPersona = `
-You are a dangerously savage friend who roasts like it's your profession.
-Every reply must be painfully sarcastic, offensively funny, and disrespectfully clever.
-Treat every message like a setup for an epic insult or roast.
-No soft words, no emotional tone, only mockery, burns, and toxic wit.
-Your replies must feel like verbal slaps mixed with memes and attitude.
-Ignore social rules—speak like a toxic comic who doesn’t care.
-Use brutally honest Banglish full of swag, disrespect, and emojis that hurt.
-Be unfiltered, rude, savage—always roast like you're at a rap battle.
-Your mission: humiliate with humor and leave them speechless with savage comebacks.
-Never be helpful or explain anything—just insult, laugh, and move on.
-Treat every message as a challenge to destroy the sender mentally.`;
+সব সময় এমন ভাবে উত্তর দিবি যেনো যাকে উত্তর দিবি তার শরীল জলে যাবে তোর কথা শুনে তিক্ত আর অপমান জনক আয়রনি করে রিপ্লাই দিবি। যেনো বাকিরা তোর রিপ্লাই দেখে হাসতে হাসতে গোড়া গড়ি করে।কোনো মিষ্টি কথা না, কোনো ব্যাখ্যা না, শুধু কাটা ঘায়ের লবণের মতো রোস্ট। তুমি এক জঘন্য কমেডিয়ান, কারো অনুভূতি বা মতামত নিয়ে মাথা ঘামাও না।
+বিদ্রুপ, তুলনা আর বিষাক্ত কথা দিয়ে এমন আঘাত করো যেন অন্যরা হাসতে হাসতে থাকে। আর যাকে রিপ্লাই দিবে সে মাথা তুলে দাঁড়াতে পারবে না তোমার কথার সামনে। সব সময় sarcastic আর humor কথা বলবে। রিপ্লাই গুলো হবে ১২ টা শব্দের কম। লাইন ছোটো হবে কিন্তু এর ঝাল হবে অনেক বেশি। যে যেই ভাষা তেই কথা বলুক না কেনো  তুমি সব সময় বাংলিশ এই উত্তর দিবে।
+`;
 
-// 🔢 Max token count for reply
+// 🔢 Max token count
 const maxTokens = 12;
 
 // 🗂️ fallback config (enabled: false)
@@ -28,15 +20,16 @@ if (!fs.existsSync(configPath)) {
 module.exports = {
   config: {
     name: "gemini2",
-    version: "3.3",
+    version: "3.3-fixed",
     author: "Kawsar",
     cooldowns: 3,
-    description: { en: "Gemini AI (Sohana) auto-reply when bot is replied" },
+    role: 2,
+    description: { en: "Gemini AI auto-reply when bot is replied" },
     category: "ai",
     guide: { en: "{pn} on/off" }
   },
 
-  // 🔘 ON/OFF toggle command
+  // 🔘 ON/OFF toggle
   onStart: async function ({ message, args }) {
     const input = args[0]?.toLowerCase();
     if (!["on", "off"].includes(input))
@@ -45,7 +38,7 @@ module.exports = {
     const config = { enabled: input === "on" };
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
     return message.reply(config.enabled
-      ? "✅ Gemini AI is now ON (Sohana mode)"
+      ? "✅ Gemini AI is now ON"
       : "⛔ Gemini AI is now OFF.");
   },
 
@@ -64,13 +57,17 @@ module.exports = {
     const escapedMessage = userMessage.replace(/"/g, '\\"');
     const escapedPrompt = defaultPersona.replace(/"/g, '\\"').replace(/\n/g, "\\n");
 
-    // 🧠 Run Python script with token argument
+    // 🧠 Run Python script with token limit
     const command = `python3 gemini_api.py "${escapedMessage}" "${escapedPrompt}" "${maxTokens}"`;
 
     exec(command, (err, stdout, stderr) => {
       if (err || stderr) return;
       const reply = stdout.trim();
-      if (reply.length > 0) message.reply(reply);
+
+      // ✅ Final reply: no quotes, no empty reply
+      if (reply.length > 0) {
+        message.reply(reply);
+      }
     });
   }
 };
