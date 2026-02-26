@@ -1,5 +1,5 @@
 // set bash title
-process.stdout.write("\x1b]2;Goat Bot V2 - Made by NTKhang Fixed by Team Calyx\x1b\x5c");
+
 const defaultRequire = require;
 
 function decode(text) {
@@ -9,7 +9,6 @@ function decode(text) {
 	return text;
 }
 
-const gradient = defaultRequire("gradient-string");
 const axios = defaultRequire("axios");
 const path = defaultRequire("path");
 const readline = defaultRequire("readline");
@@ -31,17 +30,7 @@ async function getName(userID) {
 }
 
 
-function compareVersion(version1, version2) {
-	const v1 = version1.split(".");
-	const v2 = version2.split(".");
-	for (let i = 0; i < 3; i++) {
-		if (parseInt(v1[i]) > parseInt(v2[i]))
-			return 1; // version1 > version2
-		if (parseInt(v1[i]) < parseInt(v2[i]))
-			return -1; // version1 < version2
-	}
-	return 0; // version1 = version2
-}
+
 
 const { writeFileSync, readFileSync, existsSync, watch } = require("fs-extra");
 const handlerWhenListenHasError = require("./handlerWhenListenHasError.js");
@@ -50,83 +39,10 @@ const { callbackListenTime, storage5Message } = global.GoatBot;
 const { log, logColor, getPrefix, createOraDots, jsonStringifyColor, getText, convertTime, colors, randomString } = global.utils;
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-const currentVersion = require(`${process.cwd()}/package.json`).version;
-
-function centerText(text, length) {
-	const width = process.stdout.columns;
-	const leftPadding = Math.floor((width - (length || text.length)) / 2);
-	const rightPadding = width - leftPadding - (length || text.length);
-	// Build the padded string using the calculated padding values
-	const paddedString = ' '.repeat(leftPadding > 0 ? leftPadding : 0) + text + ' '.repeat(rightPadding > 0 ? rightPadding : 0);
-	// Print the padded string to the terminal
-	console.log(paddedString);
-}
-
-// logo
-const titles = [
-	[
-		"██████╗  ██████╗  █████╗ ████████╗    ██╗   ██╗██████╗",
-		"██╔════╝ ██╔═══██╗██╔══██╗╚══██╔══╝    ██║   ██║╚════██╗",
-		"██║  ███╗██║   ██║███████║   ██║       ██║   ██║ █████╔╝",
-		"██║   ██║██║   ██║██╔══██║   ██║       ╚██╗ ██╔╝██╔═══╝",
-		"╚██████╔╝╚██████╔╝██║  ██║   ██║        ╚████╔╝ ███████╗",
-		"╚═════╝  ╚═════╝ ╚═╝  ╚═╝   ╚═╝         ╚═══╝  ╚══════╝"
-	],
-	[
-		"█▀▀ █▀█ ▄▀█ ▀█▀  █▄▄ █▀█ ▀█▀  █░█ ▀█",
-		"█▄█ █▄█ █▀█ ░█░  █▄█ █▄█ ░█░  ▀▄▀ █▄"
-	],
-	[
-		"G O A T B O T  V 2 @" + currentVersion
-	],
-	[
-		"GOATBOT V2"
-	]
-];
-const maxWidth = process.stdout.columns;
-const title = maxWidth > 58 ?
-	titles[0] :
-	maxWidth > 36 ?
-		titles[1] :
-		maxWidth > 26 ?
-			titles[2] :
-			titles[3];
-
-console.log(gradient("#f5af19", "#f12711")(createLine(null, true)));
-console.log();
-for (const text of title) {
-	const textColor = gradient("#FA8BFF", "#2BD2FF", "#2BFF88")(text);
-	centerText(textColor, text.length);
-}
-let subTitle = `GoatBot V2@${currentVersion}- A simple Bot chat messenger use personal account`;
-const subTitleArray = [];
-if (subTitle.length > maxWidth) {
-	while (subTitle.length > maxWidth) {
-		let lastSpace = subTitle.slice(0, maxWidth).lastIndexOf(' ');
-		lastSpace = lastSpace == -1 ? maxWidth : lastSpace;
-		subTitleArray.push(subTitle.slice(0, lastSpace).trim());
-		subTitle = subTitle.slice(lastSpace).trim();
-	}
-	subTitle ? subTitleArray.push(subTitle) : '';
-}
-else {
-	subTitleArray.push(subTitle);
-}
-const author = ("Created by NTKhang with ♡");
-const srcUrl = ("Source code: https://github.com/ntkhang03/Goat-Bot-V2");
-const fakeRelease = ("ALL VERSIONS NOT RELEASED HERE ARE FAKE");
-for (const t of subTitleArray) {
-	const textColor2 = gradient("#9F98E8", "#AFF6CF")(t);
-	centerText(textColor2, t.length);
-}
-centerText(gradient("#9F98E8", "#AFF6CF")(author), author.length);
-centerText(gradient("#9F98E8", "#AFF6CF")(srcUrl), srcUrl.length);
-centerText(gradient("#f5af19", "#f12711")(fakeRelease), fakeRelease.length);
-
 let widthConsole = process.stdout.columns;
 if (widthConsole > 50)
-	widthConsole = 50;
-
+        widthConsole = 50;
+        
 function createLine(content, isMaxWidth = false) {
 	if (!content)
 		return Array(isMaxWidth ? process.stdout.columns : widthConsole).fill("─").join("");
@@ -625,13 +541,7 @@ function stopListening(keyListen) {
 
 async function startBot(loginWithEmail) {
 	console.log(colors.hex("#f5ab00")(createLine("START LOGGING IN", true)));
-	const currentVersion = require("../../package.json").version;
-	const tooOldVersion = (await axios.get("https://raw.githubusercontent.com/ntkhang03/Goat-Bot-V2-Storage/main/tooOldVersions.txt")).data || "0.0.0";
-	// nếu version cũ hơn
-	if ([-1, 0].includes(compareVersion(currentVersion, tooOldVersion))) {
-		log.err("VERSION", getText('version', 'tooOldVersion', colors.yellowBright('node update')));
-		process.exit();
-	}
+	
 	/* { CHECK ORIGIN CODE } */
 
 	if (global.GoatBot.Listening)
@@ -720,7 +630,6 @@ async function startBot(loginWithEmail) {
 			global.botID = api.getCurrentUserID();
 			logColor("#f5ab00", createLine("BOT INFO"));
 			log.info("NODE VERSION", process.version);
-			log.info("PROJECT VERSION", currentVersion);
 			log.info("BOT ID", `${global.botID} - ${await getName(global.botID)}`);
 			log.info("PREFIX", global.GoatBot.config.prefix);
 			log.info("LANGUAGE", global.GoatBot.config.language);
