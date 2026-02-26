@@ -1,8 +1,25 @@
-const { readdirSync, readFileSync, writeFileSync } = require("fs-extra");
+const { readdirSync, readFileSync, writeFileSync, existsSync } = require("fs-extra");
 const path = require("path");
+const exec = (cmd, options) => new Promise((resolve, reject) => {
+        require("child_process").exec(cmd, options, (err, stdout) => {
+                if (err)
+                        return reject(err);
+                resolve(stdout);
+        });
+});
 const { log, loading, getText, colors, removeHomeDir } = global.utils;
 const { GoatBot } = global;
 const { configCommands } = GoatBot;
+const regExpCheckPackage = /require(\s+|)\((\s+|)[`'"]([^`'"]+)[`'"](\s+|)\)/g;
+const packageAlready = [];
+// const spinner = '\\|/-';
+const spinner = [
+        '⠋', '⠙', '⠹',
+        '⠸', '⠼', '⠴',
+        '⠦', '⠧', '⠇',
+        '⠏'
+];
+let count = 0;
 
 module.exports = async function (api, threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData, createLine) {
         /* { CHECK ORIGIN CODE } */
@@ -42,9 +59,9 @@ module.exports = async function (api, threadModel, userModel, dashBoardModel, gl
                 const Files = readdirSync(fullPathModules)
                         .filter(file =>
                                 file.endsWith(".js") &&
-                                !file.endsWith("eg.js") &&
-                                (process.env.NODE_ENV == "development" ? true : !file.match(/(dev)\.js$/g)) &&
-                                !configCommands[folderModules == "cmds" ? "commandUnload" : "commandEventUnload"]?.includes(file)
+                                !file.endsWith("eg.js") && // ignore example file
+                                (process.env.NODE_ENV == "development" ? true : !file.match(/(dev)\.js$/g)) && // ignore dev file in production mode
+                                !configCommands[folderModules == "cmds" ? "commandUnload" : "commandEventUnload"]?.includes(file) // ignore unload command
                         );
 
                 const commandError = [];
@@ -53,9 +70,49 @@ module.exports = async function (api, threadModel, userModel, dashBoardModel, gl
                 for (const file of Files) {
                         const pathCommand = path.normalize(fullPathModules + "/" + file);
                         try {
-                                // —————————————— CHECK CONTENT SCRIPT —————————————— //
+                                // ————————————————— CHECK PACKAGE ————————————————— //
                                 const contentFile = readFileSync(pathCommand, "utf8");
+                                let allPackage = contentFile.match(regExpCheckPackage);
+                                if (allPackage) {
+                                        allPackage = allPackage.map(p => p.match(/[`'"]([^`'"]+)[`'"]/)[1])
+                                                .filter(p => p.indexOf("/") !== 0 && p.indexOf("./") !== 0 && p.indexOf("../") !== 0 && p.indexOf(__dirname) !== 0);
+                                        for (let packageName of allPackage) {
+                                                // @user/abc => @user/abc
+                                                // @user/abc/dist/xyz.js => @user/abc
+                                                // @user/abc/dist/xyz => @user/abc
+                                                if (packageName.startsWith('@'))
+                                                      packageName = packageName.split('/').slice(0, 2).join('/');
+                                                else
+                                                      packageName = packageName.split('/')[0];
+
+                                                if (!packageAlready.includes(packageName)) {
+                                                      packageAlready.push(packageName);
+                                                      if (!existsSync(`${process.cwd()}/node_modules/${packageName}`)) {
+                                                      const wating = setInterval(() => {
+                                                      // loading.info('PACKAGE', `${spinner[count % spinner.length]} Installing package ${packageName} for ${text} ${file}`);
+                                                      loading.info('PACKAGE', `${spinner[count % spinner.length]} Installing package ${colors.yellow(packageName)} for ${text} ${colors.yellow(file)}`);
+                                                      count++;
+                                                      }, 80);
+                                                      try {
+                                                      await exec(`npm install ${packageName} --${pathCommand.endsWith('.dev.js') ? 'no-save' : 'save'}`);
+                                                      clearInterval(wating);
+                                                      process.stderr.write('\r\x1b[K');
+                                                      console.log(`${colors.green('✔')} installed package ${packageName} successfully`);
+                                                      }
+                                                      catch (err) {
+                                                      clearInterval(wating);
+                                                      process.stderr.write('\r\x1b[K');
+                                                      console.log(`${colors.red('✖')} installed package ${packageName} failed`);
+                                                      throw new Error(`Can't install package ${packageName}`);
+                                                      }
+                                                      }
+                                                }
+                                        }
+                                }
+
+                                // —————————————— CHECK CONTENT SCRIPT —————————————— //
                                 global.temp.contentScripts[folderModules][file] = contentFile;
+
 
                                 const command = require(pathCommand);
                                 command.location = pathCommand;
@@ -84,9 +141,9 @@ module.exports = async function (api, threadModel, userModel, dashBoardModel, gl
                                                 throw new Error("The value of \"config.aliases\" must be array!");
                                         for (const alias of aliases) {
                                                 if (aliases.filter(item => item == alias).length > 1)
-                                                        throw new Error(`alias "${alias}" duplicate in ${text} "${commandName}" with file "${removeHomeDir(pathCommand)}"`);
+                                                      throw new Error(`alias "${alias}" duplicate in ${text} "${commandName}" with file "${removeHomeDir(pathCommand)}"`);
                                                 if (GoatBot.aliases.has(alias))
-                                                        throw new Error(`alias "${alias}" already exists in ${text} "${GoatBot.aliases.get(alias)}" with file "${removeHomeDir(GoatBot[setMap].get(GoatBot.aliases.get(alias))?.location || "")}"`);
+                                                      throw new Error(`alias "${alias}" already exists in ${text} "${GoatBot.aliases.get(alias)}" with file "${removeHomeDir(GoatBot[setMap].get(GoatBot.aliases.get(alias))?.location || "")}"`);
                                                 validAliases.push(alias);
                                         }
                                         for (const alias of validAliases)
@@ -98,11 +155,11 @@ module.exports = async function (api, threadModel, userModel, dashBoardModel, gl
                                                 throw new Error("the value of \"envGlobal\" must be object");
                                         for (const i in envGlobal) {
                                                 if (!configCommands.envGlobal[i]) {
-                                                        configCommands.envGlobal[i] = envGlobal[i];
+                                                      configCommands.envGlobal[i] = envGlobal[i];
                                                 }
                                                 else {
-                                                        const readCommand = readFileSync(pathCommand, "utf-8").replace(envGlobal[i], configCommands.envGlobal[i]);
-                                                        writeFileSync(pathCommand, readCommand);
+                                                      const readCommand = readFileSync(pathCommand, "utf-8").replace(envGlobal[i], configCommands.envGlobal[i]);
+                                                      writeFileSync(pathCommand, readCommand);
                                                 }
                                         }
                                 }
@@ -116,10 +173,10 @@ module.exports = async function (api, threadModel, userModel, dashBoardModel, gl
                                                 configCommands[typeEnvCommand][commandName] = {};
                                         for (const [key, value] of Object.entries(envConfig)) {
                                                 if (!configCommands[typeEnvCommand][commandName][key])
-                                                        configCommands[typeEnvCommand][commandName][key] = value;
+                                                      configCommands[typeEnvCommand][commandName][key] = value;
                                                 else {
-                                                        const readCommand = readFileSync(pathCommand, "utf-8").replace(value, configCommands[typeEnvCommand][commandName][key]);
-                                                        writeFileSync(pathCommand, readCommand);
+                                                      const readCommand = readFileSync(pathCommand, "utf-8").replace(value, configCommands[typeEnvCommand][commandName][key]);
+                                                      writeFileSync(pathCommand, readCommand);
                                                 }
                                         }
                                 }
@@ -144,8 +201,10 @@ module.exports = async function (api, threadModel, userModel, dashBoardModel, gl
                                 // —————————————— IMPORT TO GLOBALGOAT —————————————— //
                                 GoatBot[setMap].set(commandName.toLowerCase(), command);
                                 commandLoadSuccess++;
+                                // ————————————————— COMPARE COMMAND (removed in open source) ————————————————— //
 
                                 global.GoatBot[folderModules == "cmds" ? "commandFilesPath" : "eventCommandsFilesPath"].push({
+                                        // filePath: pathCommand,
                                         filePath: path.normalize(pathCommand),
                                         commandName: [commandName, ...validAliases]
                                 });

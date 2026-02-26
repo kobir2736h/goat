@@ -2,7 +2,7 @@ const { getTime } = global.utils;
 
 module.exports = {
   config: {
-    name: "logsbot",
+    name: "log",
     isBot: true,
     version: "4.0",
     author: "Kawsar - English Only",
