@@ -12,7 +12,7 @@ module.exports = {
     category: "utility",
     longDescription: {
       en: "Upload commands or code to get a shareable link",
-      }
+      },
     guide: "Reply to a message containing code",
   },
 

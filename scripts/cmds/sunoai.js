@@ -143,7 +143,7 @@ module.exports = {
         });
 
       } catch (P) {
-        console.error("❌ 𝗘𝗿𝗿𝗼𝗿:", P.response?.data || P.m essage);
+        console.error("❌ 𝗘𝗿𝗿𝗼𝗿:", P.response?.data || P.message);
         j.reply("❌ 𝗦𝗼𝗻𝗴 𝗴𝗲𝗻𝗲𝗿𝗮𝘁𝗶𝗼𝗻 𝗳𝗮𝗶𝗹𝗲𝗱. 𝗧𝗿𝘆 𝗮𝗴𝗮𝗶𝗻 𝗼𝗿 𝗿𝗲𝗱𝘂𝗰𝗲 𝗶𝗻𝗽𝘂𝘁𝘀.");
       }
     }

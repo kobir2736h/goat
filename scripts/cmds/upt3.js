@@ -7,7 +7,7 @@ module.exports.config = {
   author: "Kawsar",
   cooldowns: 3,
   description: "Shows bot uptime & auto-pings render host",
-  commandCategory: "system",
+  category: "system",
   usages: "{pn}"
 };
 

@@ -71,3 +71,4 @@ module.exports = {
  message.reply("Error while mentioning the user. Please try again later.");
  }
  },
+};
