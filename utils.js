@@ -9,34 +9,14 @@ const agent = new https.Agent({
 const moment = require("moment-timezone");
 const mimeDB = require("mime-db");
 const _ = require("lodash");
-const { google } = require("googleapis");
 const ora = require("ora");
 const log = require("./logger/log.js");
 const { isHexColor, colors } = require("./func/colors.js");
 const Prism = require("./func/prism.js");
 
 const { config } = global.GoatBot;
-const { gmailAccount } = config.credentials;
-const { clientId, clientSecret, refreshToken, apiKey: googleApiKey } = gmailAccount;
-if (!clientId) {
-        log.err("CREDENTIALS", `Please provide a valid clientId in file ${path.normalize(global.client.dirConfig)}`);
-        process.exit();
-}
-if (!clientSecret) {
-        log.err("CREDENTIALS", `Please provide a valid clientSecret in file ${path.normalize(global.client.dirConfig)}`);
-        process.exit();
-}
-if (!refreshToken) {
-        log.err("CREDENTIALS", `Please provide a valid refreshToken in file ${path.normalize(global.client.dirConfig)}`);
-        process.exit();
-}
 
-const oauth2ClientForGGDrive = new google.auth.OAuth2(clientId, clientSecret, "https://developers.google.com/oauthplayground");
-oauth2ClientForGGDrive.setCredentials({ refresh_token: refreshToken });
-const driveApi = google.drive({
-        version: 'v3',
-        auth: oauth2ClientForGGDrive
-});
+
 const word = [
         'A', 'Á', 'À', 'Ả', 'Ã', 'Ạ', 'a', 'á', 'à', 'ả', 'ã', 'ạ',
         'Ă', 'Ắ', 'Ằ', 'Ẳ', 'Ẵ', 'Ặ', 'ă', 'ắ', 'ằ', 'ẳ', 'ẵ', 'ặ',
