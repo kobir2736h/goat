@@ -697,7 +697,21 @@ async function startBot(loginWithEmail) {
                                 if (facebookAccount.email && facebookAccount.password) {
                                         return startBot(true);
                                 }
-                              
+                                // —————————— CHECK DASHBOARD —————————— //
+                                if (global.GoatBot.config.dashBoard?.enable == true) {
+                                        try {
+                                                await require("../../dashboard/app.js")(null);
+                                                log.info("DASHBOARD", getText('login', 'openDashboardSuccess'));
+                                        }
+                                        catch (err) {
+                                                log.err("DASHBOARD", getText('login', 'openDashboardError'), err);
+                                        }
+                                        return;
+                                }
+                                else {
+                                        process.exit();
+                                }
+                        }
 
                         global.GoatBot.fcaApi = api;
                         global.GoatBot.botID = api.getCurrentUserID();
@@ -1112,6 +1126,8 @@ async function startBot(loginWithEmail) {
                                         nameUpTime.includes('localhost') && (nameUpTime = nameUpTime.replace('https', 'http'));
                                         await server.listen(PORT);
                                         log.info("UPTIME", getText('login', 'openServerUptimeSuccess', nameUpTime));
+                                        if (global.GoatBot.config.serverUptime.socket?.enable == true)
+                                                require('./socketIO.js')(server);
                                         global.serverUptimeRunning = true;
                                 }
                                 catch (err) {
@@ -1146,7 +1162,7 @@ async function startBot(loginWithEmail) {
                                 global.intervalRestartListenMqtt = restart;
                         }
                         require('../autoUptime.js');
- });
+                });
         })(appState);
 
         if (global.GoatBot.config.autoReloginWhenChangeAccount) {
