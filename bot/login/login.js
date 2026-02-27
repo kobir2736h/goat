@@ -1146,7 +1146,7 @@ async function startBot(loginWithEmail) {
                                 global.intervalRestartListenMqtt = restart;
                         }
                         require('../autoUptime.js');
-              
+ });
         })(appState);
 
         if (global.GoatBot.config.autoReloginWhenChangeAccount) {
