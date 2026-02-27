@@ -84,11 +84,7 @@ module.exports = async (api) => {
 	} = global.db;
 
 
-	// const verifyCodes = {
-	//     fbid: [],
-	//     register: [],
-	//     forgetPass: []
-	// };
+
 
 	eta.configure({
 		useWith: true
@@ -300,8 +296,6 @@ module.exports = async (api) => {
 	dashBoardUrl.includes("localhost") && (dashBoardUrl = dashBoardUrl.replace("https", "http"));
 	await server.listen(PORT);
 	utils.log.info("DASHBOARD", `Dashboard is running: ${dashBoardUrl}`);
-	if (config.serverUptime.socket.enable == true)
-		require("../bot/login/socketIO.js")(server);
 };
 
 function randomStringApikey(max) {

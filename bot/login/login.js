@@ -1126,8 +1126,6 @@ async function startBot(loginWithEmail) {
                                         nameUpTime.includes('localhost') && (nameUpTime = nameUpTime.replace('https', 'http'));
                                         await server.listen(PORT);
                                         log.info("UPTIME", getText('login', 'openServerUptimeSuccess', nameUpTime));
-                                        if (global.GoatBot.config.serverUptime.socket?.enable == true)
-                                                require('./socketIO.js')(server);
                                         global.serverUptimeRunning = true;
                                 }
                                 catch (err) {
