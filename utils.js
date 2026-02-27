@@ -770,34 +770,6 @@ async function uploadZippyshare(stream) {
         return res.data;
 }
 
-const drive = {
-        default: driveApi,
-        parentID: "",
-        async uploadFile(fileName, mimeType, file) {
-                if (!file && typeof fileName === "string") {
-                        file = mimeType;
-                        mimeType = undefined;
-                }
-                let response;
-                try {
-                        response = (await driveApi.files.create({
-                                resource: {
-                                        name: fileName,
-                                        parents: [this.parentID]
-                                },
-                                media: {
-                                        mimeType,
-                                        body: file
-                                },
-                                fields: "*"
-                        })).data;
-                }
-                catch (err) {
-                        throw new Error(err.errors.map(e => e.message).join("\n"));
-                }
-                await utils.drive.makePublic(response.id);
-                return response;
-        },
 
         async deleteFile(id) {
                 if (!id || typeof id !== "string")
