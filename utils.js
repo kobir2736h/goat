@@ -768,7 +768,7 @@ async function uploadZippyshare(stream) {
         res.data.data.file.url.download = downloadUrl;
 
         return res.data;
-}
+};
                         
 
 class GoatBotApis {
