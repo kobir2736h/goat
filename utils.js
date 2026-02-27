@@ -1020,7 +1020,6 @@ const utils = {
         shortenURL,
         uploadZippyshare,
         uploadImgbb,
-        drive,
 
         GoatBotApis
 };
