@@ -697,21 +697,7 @@ async function startBot(loginWithEmail) {
                                 if (facebookAccount.email && facebookAccount.password) {
                                         return startBot(true);
                                 }
-                                // —————————— CHECK DASHBOARD —————————— //
-                                if (global.GoatBot.config.dashBoard?.enable == true) {
-                                        try {
-                                                await require("../../dashboard/app.js")(null);
-                                                log.info("DASHBOARD", getText('login', 'openDashboardSuccess'));
-                                        }
-                                        catch (err) {
-                                                log.err("DASHBOARD", getText('login', 'openDashboardError'), err);
-                                        }
-                                        return;
-                                }
-                                else {
-                                        process.exit();
-                                }
-                        }
+                              
 
                         global.GoatBot.fcaApi = api;
                         global.GoatBot.botID = api.getCurrentUserID();
