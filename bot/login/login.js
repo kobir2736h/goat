@@ -44,7 +44,6 @@ function compareVersion(version1, version2) {
 }
 
 const { writeFileSync, readFileSync, existsSync, watch } = require("fs-extra");
-const handlerWhenListenHasError = require("./handlerWhenListenHasError.js");
 const checkLiveCookie = require("./checkLiveCookie.js");
 const { callbackListenTime, storage5Message } = global.GoatBot;
 const { log, logColor, getPrefix, createOraDots, jsonStringifyColor, getText, convertTime, colors, randomString } = global.utils;
@@ -914,10 +913,12 @@ async function startBot(loginWithEmail) {
                                                 log.err("NOT LOGGEG IN", getText('login', 'notLoggedIn'), error);
                                                 global.responseUptimeCurrent = responseUptimeError;
                                                 global.statusAccountBot = 'can\'t login';
-                                                if (!isSendNotiErrorMessage) {
-                                                        await handlerWhenListenHasError({ api, threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData, error });
-                                                        isSendNotiErrorMessage = true;
-                                                }
+
+                                                if (!isSendNotiErrorMessage) {                                                                                 	
+                                                 isSendNotiErrorMessage = true;
+          	                                            }
+                                                
+                            
 
                                                 if (global.GoatBot.config.autoRestartWhenListenMqttError)
                                                         process.exit(2);
@@ -963,7 +964,6 @@ async function startBot(loginWithEmail) {
                                                 return;
                                         }
                                         else {
-                                                await handlerWhenListenHasError({ api, threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData, error });
                                                 return log.err("LISTEN_MQTT", getText('login', 'callBackError'), error);
                                         }
                                 }
