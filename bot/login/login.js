@@ -616,11 +616,6 @@ function stopListening(keyListen) {
         });
 }
 
-// function removeListener(keyListen) {
-//      keyListen = keyListen || Object.keys(callbackListenTime).pop();
-//      if (callbackListenTime[keyListen])
-//              callbackListenTime[keyListen] = () => { };
-// }
 
 async function startBot(loginWithEmail) {
         console.log(colors.hex("#f5ab00")(createLine("START LOGGING IN", true)));
@@ -930,8 +925,7 @@ async function startBot(loginWithEmail) {
                                                         if (callbackListenTime[keyListen])
                                                            callbackListenTime[keyListen] = () => { };
                                                         const cookieString = appState.map(i => i.key + "=" + i.value).join("; ");
-                                                        // log.dev("GET COOKIE SUCCESS");
-                                                        // log.dev(cookieString);
+                                                                                                                                                                       
 
                                                         let times = 5;
 
@@ -971,34 +965,8 @@ async function startBot(loginWithEmail) {
                                 global.statusAccountBot = 'good';
                                 const configLog = global.GoatBot.config.logEvents;
                                 if (isSendNotiErrorMessage == true)
-                                        isSendNotiErrorMessage = false;
-
-                                // "whiteListMode": {
-                                //      "enable": false,
-                                //      "whiteListIds": [],
-                                //      "notes": "if you enable this feature, only the ids in the whiteListIds list can use the bot"
-                                // },
-                                // "whiteListModeThread": {
-                                //      "enable": false,
-                                //      "whiteListThreadIds": [],
-                                //      "notes": "if you enable this feature, only the thread in the whiteListThreadIds list can use the bot",
-                                //      "how_it_work": "if you enable both whiteListMode and whiteListModeThread, the system will check if the user is in whiteListIds, then check if the thread is in whiteListThreadIds, if one of the conditions is true, the user can use the bot"
-                                // },
-
-                                // "if you enable both whiteListMode and whiteListModeThread, the system will check if the user is in whiteListIds, then check if the thread is in whiteListThreadIds, if one of the conditions is true, the user can use the bot"
-                                // const whitelistMode = config.whiteListMode?.enable === true;
-                                // const whitelistModeThread = config.whiteListModeThread?.enable === true;
-                                // const isWhitelistedSender = config.whiteListMode?.whiteListIds.includes(event.senderID);
-                                // const isWhitelistedThread = config.whiteListModeThread?.whiteListThreadIds.includes(event.threadID);
-
-                                // if (
-                                //      (whitelistMode && whitelistModeThread && !isWhitelistedSender && !isWhitelistedThread) ||
-                                //      (whitelistMode && !isWhitelistedSender) ||
-                                //      (whitelistModeThread && !isWhitelistedThread)
-                                // ) {
-                                //      return;
-                                // }
-
+                                        isSendNotiErrorMessage = false;     
+                                                        
                                 if (
                                         global.GoatBot.config.whiteListMode?.enable == true
                                         && global.GoatBot.config.whiteListModeThread?.enable == true
@@ -1040,17 +1008,7 @@ async function startBot(loginWithEmail) {
                                                 storage5Message.shift();
                                 }
 
-                        /*      if (configLog.disableAll === false && configLog[event.type] !== false) {
-                                        // hide participantIDs (it is array too long)
-                                        const participantIDs_ = [...event.participantIDs || []];
-                                        if (event.participantIDs)
-                                                event.participantIDs = 'Array(' + event.participantIDs.length + ')';
-
-                                        console.log(colors.green((event.type || "").toUpperCase() + ":"), jsonStringifyColor(event, null, 2));
-
-                                        if (event.participantIDs)
-                                                event.participantIDs = participantIDs_;
-                                }*/
+                   
 
                                 if (configLog.disableAll === false && configLog[event.type] !== false) {
                                   const pad = (label) => label.padEnd(15, ' ');
