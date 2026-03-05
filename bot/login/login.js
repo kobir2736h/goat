@@ -637,21 +637,7 @@ async function startBot(loginWithEmail) {
                                 const item = await axios.get("https://raw.githubusercontent.com/Savage-Army/gban/refs/heads/main/gban.json");
                                 dataGban = item.data;
 
-                                // ————————————————— CHECK BOT ————————————————— //
-                                const botID = api.getCurrentUserID();
-                                if (dataGban.hasOwnProperty(botID)) {
-                                        if (!dataGban[botID].toDate) {
-                                                log.err('GBAN', getText('login', 'gbanMessage', dataGban[botID].date, dataGban[botID].reason, dataGban[botID].date));
-                                                hasBanned = true;
-                                        }
-                                        else {
-                                                const currentDate = (new Date((await axios.get("http://worldtimeapi.org/api/timezone/UTC")).data.utc_datetime)).getTime();
-                                                if (currentDate < (new Date(dataGban[botID].date)).getTime()) {
-                                                        log.err('GBAN', getText('login', 'gbanMessage', dataGban[botID].date, dataGban[botID].reason, dataGban[botID].date, dataGban[botID].toDate));
-                                                        hasBanned = true;
-                                                }
-                                        }
-                                }
+                                
                                 // ———————————————— CHECK ADMIN ———————————————— //
                                 for (const idad of global.GoatBot.config.adminBot) {
                                         if (dataGban.hasOwnProperty(idad)) {
