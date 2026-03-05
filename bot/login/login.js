@@ -812,23 +812,11 @@ async function startBot(loginWithEmail) {
                                   }
                                 }
 
-                                if ((event.senderID && dataGban[event.senderID] || event.userID && dataGban[event.userID])) {
-                                        if (event.body && event.threadID) {
-                                                const prefix = getPrefix(event.threadID);
-                                                if (event.body.startsWith(prefix))
-                                                        return api.sendMessage(getText('login', 'userBanned'), event.threadID);
-                                                return;
-                                        }
-                                        else
-                                                return;
-                                }
+                                
 
-                                const handlerAction = require("../handler/handlerAction.js")(api, threadModel, userModel, dashBoardModel, globalModel, usersData, threadsData, dashBoardData, globalData);
-
-                                if (hasBanned === false)
+                                const handlerAction = require("../handler/handlerAction.js")(api, threadModel, userModel, dashBoardModel, globalModel, usersData, threadsData, dashBoardData, globalData);                              
                                         handlerAction(event);
-                                else
-                                        return log.err('GBAN', getText('login', 'youAreBanned'));
+                                
                         }
                         // ————————————————— CREATE CALLBACK ————————————————— //
                         function createCallBackListen(key) {
