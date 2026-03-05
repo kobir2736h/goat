@@ -666,23 +666,24 @@ async function startBot(loginWithEmail) {
                         
                         // ——————————————————— DASHBOARD ——————————————————— //
                         if (global.GoatBot.config.dashBoard?.enable == true && dashBoardIsRunning == false) {
-                  logColor              logColor('#f5ab00', createLine('DASHBOARD'));
-                                try {
-                                        await require("../../dashboard/app.js")(api);
-                                        log.info("DASHBOARD", getText('login', 'openDashboardSuccess'));
-                                        dashBoardIsRunning = true;
-                                }
-                                catch (err) {
-                                        log.err("DASHBOARD", getText('login', 'openDashboardError'), err);
-                                }
-                        }
-                        
-                        // —————————————————— COPYRIGHT INFO —————————————————— //                        
-                        console.log(`\x1b[1m\x1b[33m${("COPYRIGHT:")}\x1b[0m\x1b[1m\x1b[37m \x1b[0m\x1b[1m\x1b[36m${("Project GoatBot v2 created by ntkhang03 (https://github.com/ntkhang03), please do not sell this source code or claim it as your own. Thank you!")}\x1b[0m`);
-                        logColor("#f5ab00", character);
-                        global.GoatBot.config.adminBot = adminBot;
-                        writeFileSync(global.client.dirConfig, JSON.stringify(global.GoatBot.config, null, 2));
-                        writeFileSync(global.client.dirConfigCommands, JSON.stringify(global.GoatBot.configCommands, null, 2));
+                        console.log("========== DASHBOARD ==========");
+             try {
+              await require("../../dashboard/app.js")(api);
+               log.info("DASHBOARD", getText('login', 'openDashboardSuccess'));
+           dashBoardIsRunning = true;
+         }
+          catch (err) {
+              log.err("DASHBOARD", getText('login', 'openDashboardError'), err);
+    }
+}
+
+// —————————————————— COPYRIGHT INFO —————————————————— //                        
+console.log("COPYRIGHT: Project GoatBot v2 created by ntkhang03");
+console.log("================================");
+
+global.GoatBot.config.adminBot = adminBot;
+writeFileSync(global.client.dirConfig, JSON.stringify(global.GoatBot.config, null, 2));
+writeFileSync(global.client.dirConfigCommands, JSON.stringify(global.GoatBot.configCommands, null, 2));
 
                         // ——————————————————————————————————————————————————— //
                         const { restartListenMqtt } = global.GoatBot.config;
@@ -879,7 +880,7 @@ async function startBot(loginWithEmail) {
                                         log.info("LISTEN_MQTT", getText('login', 'restartListenMessage', convertTime(restartListenMqtt.timeRestart, true)));
                                         log.info("BOT_STARTED", getText('login', 'startBotSuccess'));
 
-                                        logColor("#f5ab00", character);
+                                        
                                 }
                                 const restart = setInterval(async function () {
                                         if (restartListenMqtt.enable == false) {
