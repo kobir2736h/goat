@@ -707,63 +707,7 @@ async function startBot(loginWithEmail) {
                         await require("../custom.js")({ api, threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData, getText });
                         // —————————————————— LOAD SCRIPTS —————————————————— //
                         await require(process.env.NODE_ENV === 'development' ? "./loadScripts.dev.js" : "./loadScripts.js")(api, threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData, createLine);
-                        // ———————————— CHECK AUTO LOAD SCRIPTS ———————————— //
-                        if (global.GoatBot.config.autoLoadScripts?.enable == true) {
-                                const ignoreCmds = global.GoatBot.config.autoLoadScripts.ignoreCmds?.replace(/[ ,]+/g, ' ').trim().split(' ') || [];
-                                const ignoreEvents = global.GoatBot.config.autoLoadScripts.ignoreEvents?.replace(/[ ,]+/g, ' ').trim().split(' ') || [];
-
-                                watch(`${process.cwd()}/scripts/cmds`, async (event, filename) => {
-                                        if (filename.endsWith('.js')) {
-                                                if (ignoreCmds.includes(filename) || filename.endsWith('.eg.js'))
-                                                        return;
-                                                if ((event == 'change' || event == 'rename') && existsSync(`${process.cwd()}/scripts/cmds/${filename}`)) {
-                                                        try {
-                                                           const contentCommand = global.temp.contentScripts.cmds[filename] || "";
-                                                           const currentContent = readFileSync(`${process.cwd()}/scripts/cmds/${filename}`, 'utf-8');
-                                                           if (contentCommand == currentContent)
-                                                           return;
-                                                           global.temp.contentScripts.cmds[filename] = currentContent;
-                                                           filename = filename.replace('.js', '');
-
-                                                           const infoLoad = global.utils.loadScripts("cmds", filename, log, global.GoatBot.configCommands, api, threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData);
-                                                           if (infoLoad.status == "success")
-                                                           log.master("AUTO LOAD SCRIPTS", `Command ${filename}.js (${infoLoad.command.config.name}) has been reloaded`);
-                                                           else
-                                                           log.err("AUTO LOAD SCRIPTS", `Error when reload command ${filename}.js`, infoLoad.error);
-                                                        }
-                                                        catch (err) {
-                                                           log.err("AUTO LOAD SCRIPTS", `Error when reload command ${filename}.js`, err);
-                                                        }
-                                                }
-                                        }
-                                });
-
-                                watch(`${process.cwd()}/scripts/events`, async (event, filename) => {
-                                        if (filename.endsWith('.js')) {
-                                                if (ignoreEvents.includes(filename) || filename.endsWith('.eg.js'))
-                                                        return;
-                                                if ((event == 'change' || event == 'rename') && existsSync(`${process.cwd()}/scripts/events/${filename}`)) {
-                                                        try {
-                                                           const contentEvent = global.temp.contentScripts.events[filename] || "";
-                                                           const currentContent = readFileSync(`${process.cwd()}/scripts/events/${filename}`, 'utf-8');
-                                                           if (contentEvent == currentContent)
-                                                           return;
-                                                           global.temp.contentScripts.events[filename] = currentContent;
-                                                           filename = filename.replace('.js', '');
-
-                                                           const infoLoad = global.utils.loadScripts("events", filename, log, global.GoatBot.configCommands, api, threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData);
-                                                           if (infoLoad.status == "success")
-                                                           log.master("AUTO LOAD SCRIPTS", `Event ${filename}.js (${infoLoad.command.config.name}) has been reloaded`);
-                                                           else
-                                                           log.err("AUTO LOAD SCRIPTS", `Error when reload event ${filename}.js`, infoLoad.error);
-                                                        }
-                                                        catch (err) {
-                                                           log.err("AUTO LOAD SCRIPTS", `Error when reload event ${filename}.js`, err);
-                                                        }
-                                                }
-                                        }
-                                });
-                        }
+                        
                         // ——————————————————— DASHBOARD ——————————————————— //
                         if (global.GoatBot.config.dashBoard?.enable == true && dashBoardIsRunning == false) {
                                 logColor('#f5ab00', createLine('DASHBOARD'));
