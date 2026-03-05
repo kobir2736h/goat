@@ -9,6 +9,7 @@ function decode(text) {
         return text;
 }
 
+// প্রয়োজনীয় প্যাকেজ ইমপোর্ট
 const gradient = defaultRequire("gradient-string");
 const axios = defaultRequire("axios");
 const path = defaultRequire("path");
@@ -20,6 +21,7 @@ const qr = new (defaultRequire("qrcode-reader"));
 const Canvas = defaultRequire("canvas");
 const https = defaultRequire("https");
 
+// ইউজারের নাম আনার ফাংশন
 async function getName(userID) {
         try {
                 const user = await axios.post(`https://www.facebook.com/api/graphql/?q=${`node(${userID}){name}`}`);
@@ -30,113 +32,26 @@ async function getName(userID) {
         }
 }
 
-
+// ভার্সন চেক করার ফাংশন
 function compareVersion(version1, version2) {
         const v1 = version1.split(".");
         const v2 = version2.split(".");
         for (let i = 0; i < 3; i++) {
-                if (parseInt(v1[i]) > parseInt(v2[i]))
-                        return 1; // version1 > version2
-                if (parseInt(v1[i]) < parseInt(v2[i]))
-                        return -1; // version1 < version2
+                if (parseInt(v1[i]) > parseInt(v2[i])) return 1; 
+                if (parseInt(v1[i]) < parseInt(v2[i])) return -1; 
         }
-        return 0; // version1 = version2
+        return 0; 
 }
 
 const { writeFileSync, readFileSync, existsSync, watch } = require("fs-extra");
 const checkLiveCookie = require("./checkLiveCookie.js");
 const { callbackListenTime, storage5Message } = global.GoatBot;
 const { log, logColor, getPrefix, createOraDots, jsonStringifyColor, getText, convertTime, colors, randomString } = global.utils;
-const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const currentVersion = require(`${process.cwd()}/package.json`).version;
 
-function centerText(text, length) {
-        const width = process.stdout.columns;
-        const leftPadding = Math.floor((width - (length || text.length)) / 2);
-        const rightPadding = width - leftPadding - (length || text.length);
-        // Build the padded string using the calculated padding values
-        const paddedString = ' '.repeat(leftPadding > 0 ? leftPadding : 0) + text + ' '.repeat(rightPadding > 0 ? rightPadding : 0);
-        // Print the padded string to the terminal
-        console.log(paddedString);
-}
-
-// logo
-const titles = [
-        [
-                kawsar
-        ],
-        [
-                kawsar
-        ],
-        [
-        kawsar
-        ],
-        [
-                "GOATBOT V2"
-        ]
-];
-const maxWidth = process.stdout.columns;
-const title = maxWidth > 58 ?
-        titles[0] :
-        maxWidth > 36 ?
-                titles[1] :
-                maxWidth > 26 ?
-                        titles[2] :
-                        titles[3];
-
-console.log(gradient("#f5af19", "#f12711")(createLine(null, true)));
-console.log();
-for (const text of title) {
-        const textColor = gradient("#FA8BFF", "#2BD2FF", "#2BFF88")(text);
-        centerText(textColor, text.length);
-}
-let subTitle = `GoatBot V2@${currentVersion}- A simple Bot chat messenger use personal account`;
-const subTitleArray = [];
-if (subTitle.length > maxWidth) {
-        while (subTitle.length > maxWidth) {
-                let lastSpace = subTitle.slice(0, maxWidth).lastIndexOf(' ');
-                lastSpace = lastSpace == -1 ? maxWidth : lastSpace;
-                subTitleArray.push(subTitle.slice(0, lastSpace).trim());
-                subTitle = subTitle.slice(lastSpace).trim();
-        }
-        subTitle ? subTitleArray.push(subTitle) : '';
-}
-else {
-        subTitleArray.push(subTitle);
-}
-const author = ("Created by NTKhang with ♡");
-const srcUrl = ("Source code: https://github.com/ntkhang03/Goat-Bot-V2");
-const fakeRelease = ("ALL VERSIONS NOT RELEASED HERE ARE FAKE");
-for (const t of subTitleArray) {
-        const textColor2 = gradient("#9F98E8", "#AFF6CF")(t);
-        centerText(textColor2, t.length);
-}
-centerText(gradient("#9F98E8", "#AFF6CF")(author), author.length);
-centerText(gradient("#9F98E8", "#AFF6CF")(srcUrl), srcUrl.length);
-centerText(gradient("#f5af19", "#f12711")(fakeRelease), fakeRelease.length);
-
-let widthConsole = process.stdout.columns;
-if (widthConsole > 50)
-        widthConsole = 50;
-
-function createLine(content, isMaxWidth = false) {
-        if (!content)
-                return Array(isMaxWidth ? process.stdout.columns : widthConsole).fill("─").join("");
-        else {
-                content = ` ${content.trim()} `;
-                const lengthContent = content.length;
-                const lengthLine = isMaxWidth ? process.stdout.columns - lengthContent : widthConsole - lengthContent;
-                let left = Math.floor(lengthLine / 2);
-                if (left < 0 || isNaN(left))
-                        left = 0;
-                const lineOne = Array(left).fill("─").join("");
-                return lineOne + content + lineOne;
-        }
-}
-
-const character = createLine();
-
+// টার্মিনালের লাইন পরিষ্কার করার ফাংশন (অন্য কাজে লাগতে পারে)
 const clearLines = (n) => {
         for (let i = 0; i < n; i++) {
                 const y = i === 0 ? null : -1;
@@ -146,6 +61,7 @@ const clearLines = (n) => {
         process.stdout.cursorTo(0);
         process.stdout.write('');
 };
+
 
 async function input(prompt, isPassword = false) {
         const rl = readline.createInterface({
