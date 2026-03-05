@@ -62,7 +62,16 @@ const clearLines = (n) => {
         process.stdout.write('');
 };
 
-
+function createLine(content) {
+    const width = 50;
+    if (!content) {
+        return "─".repeat(width);
+    }
+    content = ` ${content.trim()} `;
+    const left = Math.floor((width - content.length) / 2);
+    const line = "─".repeat(left > 0 ? left : 0);
+    return line + content + line;
+}
 async function input(prompt, isPassword = false) {
         const rl = readline.createInterface({
                 input: process.stdin,
