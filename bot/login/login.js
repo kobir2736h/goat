@@ -662,16 +662,8 @@ async function startBot(loginWithEmail) {
                                 log.err('GBAN', getText('login', 'checkGbanError'));
                                 process.exit();
                         }
-                        // ———————————————— NOTIFICATIONS ———————————————— //
-                        let notification;
-                        try {
-                                const getNoti = await axios.get("https://raw.githubusercontent.com/ntkhang03/Goat-Bot-V2-Gban/master/notification.txt");
-                                notification = getNoti.data;
-                        }
-                        catch (err) {
-                                log.err("ERROR", "Can't get notifications data");
-                                process.exit();
-                        }
+                        // ———————————————— autoRefreshFbstate ———————————————— //
+                        
                         if (global.GoatBot.config.autoRefreshFbstate == true) {
                                 changeFbStateByCode = true;
                                 try {
@@ -683,10 +675,7 @@ async function startBot(loginWithEmail) {
                                 }
                                 setTimeout(() => changeFbStateByCode = false, 1000);
                         }
-                        if (hasBanned == true) {
-                                log.err('GBAN', getText('login', 'youAreBanned'));
-                                process.exit();
-                        }
+                        
                         // ——————————————————— LOAD DATA ——————————————————— //
                         const { threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData, sequelize } = await require(process.env.NODE_ENV === 'development' ? "./loadData.dev.js" : "./loadData.js")(api, createLine);
                         // ————————————————— CUSTOM SCRIPTS ————————————————— //
