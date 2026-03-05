@@ -677,13 +677,7 @@ async function startBot(loginWithEmail) {
     }
 }
 
-// —————————————————— COPYRIGHT INFO —————————————————— //                        
-console.log("COPYRIGHT: Project GoatBot v2 created by ntkhang03");
-console.log("================================");
 
-global.GoatBot.config.adminBot = adminBot;
-writeFileSync(global.client.dirConfig, JSON.stringify(global.GoatBot.config, null, 2));
-writeFileSync(global.client.dirConfigCommands, JSON.stringify(global.GoatBot.configCommands, null, 2));
 
                         // ——————————————————————————————————————————————————— //
                         const { restartListenMqtt } = global.GoatBot.config;
