@@ -72,6 +72,10 @@ function createLine(content) {
     const line = "─".repeat(left > 0 ? left : 0);
     return line + content + line;
 }
+
+// ✅ এই লাইনটাও যোগ করো:
+const character = createLine();
+
 async function input(prompt, isPassword = false) {
         const rl = readline.createInterface({
                 input: process.stdin,
