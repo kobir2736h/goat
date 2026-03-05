@@ -710,7 +710,7 @@ async function startBot(loginWithEmail) {
                         
                         // ——————————————————— DASHBOARD ——————————————————— //
                         if (global.GoatBot.config.dashBoard?.enable == true && dashBoardIsRunning == false) {
-                                logColor('#f5ab00', createLine('DASHBOARD'));
+                  logColor              logColor('#f5ab00', createLine('DASHBOARD'));
                                 try {
                                         await require("../../dashboard/app.js")(api);
                                         log.info("DASHBOARD", getText('login', 'openDashboardSuccess'));
@@ -720,25 +720,7 @@ async function startBot(loginWithEmail) {
                                         log.err("DASHBOARD", getText('login', 'openDashboardError'), err);
                                 }
                         }
-                        // ———————————————————— ADMIN BOT ———————————————————— //
-                        logColor('#f5ab00', character);
-                        let i = 0;
-                        const adminBot = global.GoatBot.config.adminBot
-                                .filter(item => !isNaN(item))
-                                .map(item => item = item.toString());
-                        for (const uid of adminBot) {
-                                try {
-                                        const userName = await usersData.getName(uid);
-                                        log.master("ADMINBOT", `[${++i}] ${uid} | ${userName}`);
-                                }
-                                catch (e) {
-                                        log.master("ADMINBOT", `[${++i}] ${uid}`);
-                                }
-                        }
-                        log.master("NOTIFICATION", (notification || "").trim());
-                        log.master("SUCCESS", getText('login', 'runBot'));
-                        log.master("LOAD TIME", `${convertTime(Date.now() - global.GoatBot.startTime)}`);
-                        logColor("#f5ab00", createLine("COPYRIGHT"));
+                        
                         // —————————————————— COPYRIGHT INFO —————————————————— //                        
                         console.log(`\x1b[1m\x1b[33m${("COPYRIGHT:")}\x1b[0m\x1b[1m\x1b[37m \x1b[0m\x1b[1m\x1b[36m${("Project GoatBot v2 created by ntkhang03 (https://github.com/ntkhang03), please do not sell this source code or claim it as your own. Thank you!")}\x1b[0m`);
                         logColor("#f5ab00", character);
