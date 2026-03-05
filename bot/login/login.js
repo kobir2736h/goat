@@ -629,39 +629,7 @@ async function startBot(loginWithEmail) {
                         log.info("PREFIX", global.GoatBot.config.prefix);
                         log.info("LANGUAGE", global.GoatBot.config.language);
                         log.info("BOT NICK NAME", global.GoatBot.config.nickNameBot || "GOAT BOT");
-                        // ———————————————————— GBAN ————————————————————— //
-                        let dataGban;
-
-                        try {
-                                // convert to promise
-                                const item = await axios.get("https://raw.githubusercontent.com/Savage-Army/gban/refs/heads/main/gban.json");
-                                dataGban = item.data;
-
-                                
-                                // ———————————————— CHECK ADMIN ———————————————— //
-                                for (const idad of global.GoatBot.config.adminBot) {
-                                        if (dataGban.hasOwnProperty(idad)) {
-                                                if (!dataGban[idad].toDate) {
-                                                        log.err('GBAN', getText('login', 'gbanMessage', dataGban[idad].date, dataGban[idad].reason, dataGban[idad].date));
-                                                        hasBanned = true;
-                                                }
-                                                else {
-                                                        const currentDate = (new Date((await axios.get("http://worldtimeapi.org/api/timezone/UTC")).data.utc_datetime)).getTime();
-                                                        if (currentDate < (new Date(dataGban[idad].date)).getTime()) {
-                                                           log.err('GBAN', getText('login', 'gbanMessage', dataGban[idad].date, dataGban[idad].reason, dataGban[idad].date, dataGban[idad].toDate));
-                                                           hasBanned = true;
-                                                        }
-                                                }
-                                        }
-                                }
-                                if (hasBanned == true)
-                                        process.exit();
-                        }
-                        catch (e) {
-                                console.log(e);
-                                log.err('GBAN', getText('login', 'checkGbanError'));
-                                process.exit();
-                        }
+                        
                         // ———————————————— autoRefreshFbstate ———————————————— //
                         
                         if (global.GoatBot.config.autoRefreshFbstate == true) {
