@@ -25,17 +25,16 @@ process.stdout.write('');
 };
 
 function createLine(content) {
-const width = 50;
-if (!content) {
-return "─".repeat(width);
-}
-content = ${content.trim()};
-const left = Math.floor((width - content.length) / 2);
-const line = "─".repeat(left > 0 ? left : 0);
-return line + content + line;
+    const width = 50;
+    if (!content) {
+        return "─".repeat(width);
+    }
+    content = ` ${content.trim()} `;  
+    const left = Math.floor((width - content.length) / 2);
+    const line = "─".repeat(left > 0 ? left : 0);
+    return line + content + line;
 }
 const character = createLine();
-
 // ================== HELPER FUNCTIONS ================== //
 
 function filterKeysAppState(appState) {
