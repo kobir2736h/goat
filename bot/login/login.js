@@ -13,6 +13,29 @@ const { log, getText, convertTime, randomString } = global.utils;
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const { dirAccount } = global.client;
 
+// টার্মিনালের লাইন পরিষ্কার করার ফাংশন (অন্য কাজে লাগতে পারে)
+const clearLines = (n) => {
+for (let i = 0; i < n; i++) {
+const y = i === 0 ? null : -1;
+process.stdout.moveCursor(0, y);
+process.stdout.clearLine(1);
+}
+process.stdout.cursorTo(0);
+process.stdout.write('');
+};
+
+function createLine(content) {
+const width = 50;
+if (!content) {
+return "─".repeat(width);
+}
+content = ${content.trim()};
+const left = Math.floor((width - content.length) / 2);
+const line = "─".repeat(left > 0 ? left : 0);
+return line + content + line;
+}
+const character = createLine();
+
 // ================== HELPER FUNCTIONS ================== //
 
 function filterKeysAppState(appState) {
