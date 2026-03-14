@@ -84,12 +84,6 @@ module.exports = async (api) => {
 	} = global.db;
 
 
-	// const verifyCodes = {
-	//     fbid: [],
-	//     register: [],
-	//     forgetPass: []
-	// };
-
 	eta.configure({
 		useWith: true
 	});
@@ -124,13 +118,25 @@ module.exports = async (api) => {
 	app.use(fileUpload());
 
 	app.use(flash());
+
+	// 🔴 পরিবর্তন ১: অটো-লগইন (ফেক ইউজার ডাটা সেট করা হলো) 🔴
 	app.use(function (req, res, next) {
+		// অ্যাডমিন আইডি সেট করা হচ্ছে যাতে ড্যাশবোর্ড আপনাকে অ্যাডমিন মনে করে
+		const adminID = config.adminBot[0] || "100000000000000";
+		
+		req.user = {
+			facebookUserID: adminID,
+			email: "admin@goatbot.com",
+			isAdmin: true,
+			verifyFacebook: true
+		};
+
 		res.locals.gRecaptcha_siteKey = gRecaptcha.siteKey;
 		res.locals.__dirname = __dirname;
 		res.locals.success = req.flash("success") || [];
 		res.locals.errors = req.flash("errors") || [];
 		res.locals.warnings = req.flash("warnings") || [];
-		res.locals.user = req.user || null;
+		res.locals.user = req.user; // ফেক ইউজার পাস করা হলো
 		next();
 	});
 
@@ -168,16 +174,19 @@ module.exports = async (api) => {
 	}
 
 
-	// ROUTES & MIDDLWARE
+	// 🔴 পরিবর্তন ২: সিকিউরিটি মিডলওয়্যার বাইপাস করা হলো 🔴
+	const bypassAuth = (req, res, next) => next(); // কোনো চেকিং ছাড়াই ভেতরে যেতে দেবে
+
+	const unAuthenticated = bypassAuth;
+	const isWaitVerifyAccount = bypassAuth;
+	const isAuthenticated = bypassAuth;
+	const isAdmin = bypassAuth;
+	const isVeryfiUserIDFacebook = bypassAuth;
+
 	const {
-		unAuthenticated,
-		isWaitVerifyAccount,
-		isAuthenticated,
-		isAdmin,
-		isVeryfiUserIDFacebook,
 		checkHasAndInThread,
 		middlewareCheckAuthConfigDashboardOfThread
-	} = middleWare;
+	} = middleWare; // শুধু থ্রেডের ডাটা চেক করার পার্টটুকু আগের মতই রাখা হলো
 
 	const paramsForRoutes = {
 		unAuthenticated, isWaitVerifyAccount, isAdmin, isAuthenticated,
@@ -190,16 +199,19 @@ module.exports = async (api) => {
 		imageExt, videoExt, audioExt, convertSize, drive, usersData
 	};
 
-	const registerRoute = require("./routes/register.js")(paramsForRoutes);
-	const loginRoute = require("./routes/login.js")(paramsForRoutes);
-	const forgotPasswordRoute = require("./routes/forgotPassword.js")(paramsForRoutes);
-	const changePasswordRoute = require("./routes/changePassword.js")(paramsForRoutes);
+	// অপ্রয়োজনীয় রাউটগুলো লোড করা বন্ধ করে দেওয়া হয়েছে (যাতে মেমরি বাঁচে)
+	// const registerRoute = require("./routes/register.js")(paramsForRoutes);
+	// const loginRoute = require("./routes/login.js")(paramsForRoutes);
+	// const forgotPasswordRoute = require("./routes/forgotPassword.js")(paramsForRoutes);
+	// const changePasswordRoute = require("./routes/changePassword.js")(paramsForRoutes);
+	
 	const dashBoardRoute = require("./routes/dashBoard.js")(paramsForRoutes);
 	const verifyFbidRoute = require("./routes/verifyfbid.js")(paramsForRoutes);
 	const apiRouter = require("./routes/api.js")(paramsForRoutes);
 
+	// 🔴 পরিবর্তন ৩: হোমপেজ থেকে সরাসরি ড্যাশবোর্ডে রিডাইরেক্ট 🔴
 	app.get(["/", "/home"], (req, res) => {
-		res.render("home");
+		res.redirect("/dashboard");
 	});
 
 	app.get("/stats", async (req, res) => {
@@ -235,11 +247,7 @@ module.exports = async (api) => {
 	app.get("/donate", (req, res) => res.render("donate"));
 
 	app.get("/logout", (req, res, next) => {
-		req.logout(function (err) {
-			if (err)
-				return next(err);
-			res.redirect("/");
-		});
+		res.redirect("/"); // লগআউট কাজ করবে না, সরাসরি আবার ড্যাশবোর্ডে নিয়ে যাবে
 	});
 
 	app.post("/changefbstate", isAuthenticated, isVeryfiUserIDFacebook, (req, res) => {
@@ -273,10 +281,12 @@ module.exports = async (api) => {
 		});
 	});
 
-	app.use("/register", registerRoute);
-	app.use("/login", loginRoute);
-	app.use("/forgot-password", forgotPasswordRoute);
-	app.use("/change-password", changePasswordRoute);
+	// 🔴 পরিবর্তন ৪: অপ্রয়োজনীয় রাউটগুলো বন্ধ 🔴
+	// app.use("/register", registerRoute);
+	// app.use("/login", loginRoute);
+	// app.use("/forgot-password", forgotPasswordRoute);
+	// app.use("/change-password", changePasswordRoute);
+	
 	app.use("/dashboard", dashBoardRoute);
 	app.use("/verifyfbid", verifyFbidRoute);
 	app.use("/api", apiRouter);
@@ -328,4 +338,3 @@ function validateEmail(email) {
 function convertSize(byte) {
 	return byte > 1024 ? byte > 1024 * 1024 ? (byte / 1024 / 1024).toFixed(2) + " MB" : (byte / 1024).toFixed(2) + " KB" : byte + " Byte";
 }
-
