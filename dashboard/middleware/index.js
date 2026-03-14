@@ -7,127 +7,51 @@ function isPostMethod(req) {
 module.exports = function (checkAuthConfigDashboardOfThread) {
 	return {
 		isAuthenticated(req, res, next) {
-			if (req.isAuthenticated())
-				return next();
-
-			if (isPostMethod(req))
-				return res.status(401).send({
-					status: "error",
-					error: "PERMISSION_DENIED",
-					message: "Bạn chưa đăng nhập"
-				});
-
-			req.flash("errors", { msg: "You must be logged in" });
-			res.redirect(`/login?redirect=${req.originalUrl}`);
+            // লগইন চেক করা বন্ধ করে সরাসরি পারমিশন দেওয়া হলো
+			next();
 		},
 
 		unAuthenticated(req, res, next) {
-			if (!req.isAuthenticated())
-				return next();
-
-			if (isPostMethod(req))
-				return res.status(401).send({
-					status: "error",
-					error: "PERMISSION_DENIED",
-					message: "Đã xảy ra lỗi"
-				});
-
-			res.redirect("/");
+			next();
 		},
 
 		isVeryfiUserIDFacebook(req, res, next) {
-			if (req.user.facebookUserID)
-				return next();
-
-			if (isPostMethod(req))
-				return res.status(401).send({
-					status: "error",
-					error: "PERMISSION_DENIED",
-					message: "Bạn chưa xác thực id Facebook"
-				});
-
-			req.flash("errors", { msg: "Bạn cần phải xác thực id facebook trước khi thực hiện hành động này" });
-			res.redirect(`/verifyfbid?redirect=${req.originalUrl}`);
+            // ফেসবুক আইডি ভেরিফিকেশন চেক বন্ধ করা হলো
+			next();
 		},
 
 		isWaitVerifyAccount(req, res, next) {
-			if (req.session.waitVerifyAccount)
-				return next();
-
-			if (isPostMethod(req))
-				return res.status(401).send({
-					status: "error",
-					error: "PERMISSION_DENIED",
-					message: "Đã xảy ra lỗi, vui lòng thử lại"
-				});
-
-			res.redirect("/register");
+			next();
 		},
 
 		async checkHasAndInThread(req, res, next) {
-			const userID = req.user.facebookUserID;
 			const threadID = isPostMethod(req) ? req.body.threadID : req.params.threadID;
 			const threadData = await threadsData.get(threadID);
 
+            // গ্রুপ না পেলে শুধু এরর দেখাবে, কিন্তু আপনি ওই গ্রুপে আছেন কি না সেই চেকিং (findMember) বাদ দেওয়া হলো
 			if (!threadData) {
 				if (isPostMethod(req))
 					return res.status(401).send({
 						status: "error",
 						error: "PERMISSION_DENIED",
-						message: "Không tìm thấy nhóm này"
+						message: "Không tìm thấy nhóm này (Group not found)"
 					});
 
 				req.flash("errors", { msg: "Thread not found" });
 				return res.redirect("/dashboard");
 			}
 
-			const findMember = threadData.members.find(m => m.userID == userID && m.inGroup == true);
-			if (!findMember) {
-				if (isPostMethod(req))
-					return res.status(401).send({
-						status: "error",
-						error: "PERMISSION_DENIED",
-						message: "Bạn không phải là thành viên nhóm này"
-					});
-
-				req.flash("errors", { msg: "Bạn không ở trong nhóm chat này" });
-				return res.redirect("/dashboard");
-			}
 			req.threadData = threadData;
-			next();
+			next(); 
 		},
 
 		async middlewareCheckAuthConfigDashboardOfThread(req, res, next) {
-			const threadID = isPostMethod(req) ? req.body.threadID : req.params.threadID;
-			if (checkAuthConfigDashboardOfThread(threadID, req.user.facebookUserID))
-				return next();
-
-			if (isPostMethod(req))
-				return res.status(401).send({
-					status: "error",
-					error: "PERMISSION_DENIED",
-					message: "Bạn không có quyền chinh sửa nhóm này"
-				});
-
-			req.flash("errors", {
-				msg: "[!] Chỉ quản trị viên của nhóm chat hoặc những thành viên được cho phép mới có thể chỉnh sửa dashboard"
-			});
-			return res.redirect("/dashboard");
+            // গ্রুপের ড্যাশবোর্ড এডিট করার পারমিশন চেক বন্ধ করা হলো (সবসময় এডিট করা যাবে)
+			next();
 		},
 
 		async isAdmin(req, res, next) {
-			const userID = req.user.facebookUserID;
-			if (!global.GoatBot.config.adminBot.includes(userID)) {
-				if (isPostMethod(req))
-					return res.status(401).send({
-						status: "error",
-						error: "PERMISSION_DENIED",
-						message: "Bạn không phải là admin của bot"
-					});
-
-				req.flash("errors", { msg: "Bạn không phải là admin của bot" });
-				return res.redirect("/dashboard");
-			}
+            // অ্যাডমিন চেক বন্ধ করা হলো (সবাইকে অ্যাডমিন হিসেবে কাজ করতে দেবে)
 			next();
 		}
 	};
