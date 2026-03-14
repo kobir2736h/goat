@@ -6,12 +6,8 @@ const fs = require("fs-extra");
 const session = require("express-session");
 const eta = require("eta");
 const bodyParser = require("body-parser");
-const { google } = require("googleapis");
-const nodemailer = require("nodemailer");
 const cookieParser = require("cookie-parser");
 const flash = require("connect-flash");
-const Passport = require("passport");
-const bcrypt = require("bcrypt");
 const axios = require("axios");
 const mimeDB = require("mime-db");
 const http = require("http");
@@ -38,41 +34,9 @@ module.exports = async (api) => {
 	const { utils, utils: { drive } } = global;
 	const { config } = global.GoatBot;
 	const { expireVerifyCode } = config.dashBoard;
-	const { gmailAccount, gRecaptcha } = config.credentials;
+	const { gRecaptcha } = config.credentials;
 
 	const getText = global.utils.getText;
-
-	const {
-		email,
-		clientId,
-		clientSecret,
-		refreshToken
-	} = gmailAccount;
-
-	const OAuth2 = google.auth.OAuth2;
-	const OAuth2_client = new OAuth2(clientId, clientSecret);
-	OAuth2_client.setCredentials({ refresh_token: refreshToken });
-	let accessToken;
-	try {
-		accessToken = await OAuth2_client.getAccessToken();
-	}
-	catch (err) {
-		throw new Error(getText("Goat", "googleApiRefreshTokenExpired"));
-	}
-
-	const transporter = nodemailer.createTransport({
-		host: "smtp.gmail.com",
-		service: "Gmail",
-		auth: {
-			type: "OAuth2",
-			user: email,
-			clientId,
-			clientSecret,
-			refreshToken,
-			accessToken
-		}
-	});
-
 
 	const {
 		threadModel,
@@ -112,16 +76,11 @@ module.exports = async (api) => {
 	app.use("/js", express.static(`${__dirname}/js`));
 	app.use("/images", express.static(`${__dirname}/images`));
 
-	require("./passport-config.js")(Passport, dashBoardData, bcrypt);
-	app.use(Passport.initialize());
-	app.use(Passport.session());
 	app.use(fileUpload());
-
 	app.use(flash());
 
-	// 🔴 পরিবর্তন ১: অটো-লগইন (ফেক ইউজার ডাটা সেট করা হলো) 🔴
+	// 🔴 অটো-লগইন (ফেক ইউজার ডাটা) 🔴
 	app.use(function (req, res, next) {
-		// অ্যাডমিন আইডি সেট করা হচ্ছে যাতে ড্যাশবোর্ড আপনাকে অ্যাডমিন মনে করে
 		const adminID = config.adminBot[0] || "100000000000000";
 		
 		req.user = {
@@ -136,11 +95,9 @@ module.exports = async (api) => {
 		res.locals.success = req.flash("success") || [];
 		res.locals.errors = req.flash("errors") || [];
 		res.locals.warnings = req.flash("warnings") || [];
-		res.locals.user = req.user; // ফেক ইউজার পাস করা হলো
+		res.locals.user = req.user; 
 		next();
 	});
-
-	const generateEmailVerificationCode = require("./scripts/generate-Email-Verification.js");
 
 	// ————————————————— MIDDLEWARE ————————————————— //
 	const createLimiter = (ms, max) => rateLimit({
@@ -174,8 +131,8 @@ module.exports = async (api) => {
 	}
 
 
-	// 🔴 পরিবর্তন ২: সিকিউরিটি মিডলওয়্যার বাইপাস করা হলো 🔴
-	const bypassAuth = (req, res, next) => next(); // কোনো চেকিং ছাড়াই ভেতরে যেতে দেবে
+	// 🔴 সিকিউরিটি মিডলওয়্যার বাইপাস 🔴
+	const bypassAuth = (req, res, next) => next(); 
 
 	const unAuthenticated = bypassAuth;
 	const isWaitVerifyAccount = bypassAuth;
@@ -186,30 +143,24 @@ module.exports = async (api) => {
 	const {
 		checkHasAndInThread,
 		middlewareCheckAuthConfigDashboardOfThread
-	} = middleWare; // শুধু থ্রেডের ডাটা চেক করার পার্টটুকু আগের মতই রাখা হলো
+	} = middleWare; 
 
 	const paramsForRoutes = {
 		unAuthenticated, isWaitVerifyAccount, isAdmin, isAuthenticated,
 		isVeryfiUserIDFacebook, checkHasAndInThread, middlewareCheckAuthConfigDashboardOfThread,
 
-		isVerifyRecaptcha, validateEmail, randomNumberApikey, transporter,
-		generateEmailVerificationCode, dashBoardData, expireVerifyCode, Passport, isVideoFile,
+		isVerifyRecaptcha, validateEmail, randomNumberApikey, 
+		dashBoardData, expireVerifyCode, isVideoFile,
 
 		threadsData, api, createLimiter, config, checkAuthConfigDashboardOfThread,
 		imageExt, videoExt, audioExt, convertSize, drive, usersData
 	};
 
-	// অপ্রয়োজনীয় রাউটগুলো লোড করা বন্ধ করে দেওয়া হয়েছে (যাতে মেমরি বাঁচে)
-	// const registerRoute = require("./routes/register.js")(paramsForRoutes);
-	// const loginRoute = require("./routes/login.js")(paramsForRoutes);
-	// const forgotPasswordRoute = require("./routes/forgotPassword.js")(paramsForRoutes);
-	// const changePasswordRoute = require("./routes/changePassword.js")(paramsForRoutes);
-	
 	const dashBoardRoute = require("./routes/dashBoard.js")(paramsForRoutes);
 	const verifyFbidRoute = require("./routes/verifyfbid.js")(paramsForRoutes);
 	const apiRouter = require("./routes/api.js")(paramsForRoutes);
 
-	// 🔴 পরিবর্তন ৩: হোমপেজ থেকে সরাসরি ড্যাশবোর্ডে রিডাইরেক্ট 🔴
+	// 🔴 হোমপেজ থেকে ড্যাশবোর্ডে রিডাইরেক্ট 🔴
 	app.get(["/", "/home"], (req, res) => {
 		res.redirect("/dashboard");
 	});
@@ -247,7 +198,7 @@ module.exports = async (api) => {
 	app.get("/donate", (req, res) => res.render("donate"));
 
 	app.get("/logout", (req, res, next) => {
-		res.redirect("/"); // লগআউট কাজ করবে না, সরাসরি আবার ড্যাশবোর্ডে নিয়ে যাবে
+		res.redirect("/"); 
 	});
 
 	app.post("/changefbstate", isAuthenticated, isVeryfiUserIDFacebook, (req, res) => {
@@ -281,12 +232,6 @@ module.exports = async (api) => {
 		});
 	});
 
-	// 🔴 পরিবর্তন ৪: অপ্রয়োজনীয় রাউটগুলো বন্ধ 🔴
-	// app.use("/register", registerRoute);
-	// app.use("/login", loginRoute);
-	// app.use("/forgot-password", forgotPasswordRoute);
-	// app.use("/change-password", changePasswordRoute);
-	
 	app.use("/dashboard", dashBoardRoute);
 	app.use("/verifyfbid", verifyFbidRoute);
 	app.use("/api", apiRouter);
