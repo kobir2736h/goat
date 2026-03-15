@@ -3,9 +3,7 @@
 var utils = require("./utils");
 var cheerio = require("cheerio");
 var log = require("npmlog");
-/*var { getThemeColors } = require("../../func/utils/log.js");
-var logger = require("../../func/utils/log.js");
-var { cra, cv, cb, co } = getThemeColors();*/
+
 log.maxRecordSize = 100;
 var checkVerified = null;
 const Boolean_Option = ['online', 'selfListen', 'listenEvents', 'updatePresence', 'forceLogin', 'autoMarkDelivery', 'autoMarkRead', 'listenTyping', 'autoReconnect', 'emitReady'];
@@ -126,13 +124,13 @@ function buildAPI(globalOptions, html, jar) {
     var userCookie = cookies.find(cookie => cookie.cookieString().startsWith("c_user="));
     var tiktikCookie = cookies.find(cookie => cookie.cookieString().startsWith("i_user="));
     if (!userCookie && !tiktikCookie) {
-        return log.error('login', "Không tìm thấy cookie cho người dùng, vui lòng kiểm tra lại thông tin đăng nhập");
+        return log.error('login', "Không tìm thấy cookie cho người dùng, vui lòng kiểm tra lại appstate!");
     }
     if (html.includes("/checkpoint/block/?next")) {
         return log.error('login', "Appstate die, vui lòng thay cái mới!", 'error');
     }
     userID = (tiktikCookie || userCookie).cookieString().split("=")[1];
-    //logger.log(`${cra(`[ CONNECT ]`)} Logged in as ${userID}`, "DATABASE");
+    
     try { clearInterval(checkVerified); } catch (_) { }
     const clientID = (Math.random() * 2147483648 | 0).toString(16);
     let mqttEndpoint = `wss://edge-chat.facebook.com/chat?region=prn&sid=${userID}`;
@@ -140,7 +138,7 @@ function buildAPI(globalOptions, html, jar) {
 
     try {
         const endpointMatch = html.match(/"endpoint":"([^"]+)"/);
-        if (endpointMatch.input.includes("601051028565049")) {
+        if (endpointMatch && endpointMatch.input.includes("601051028565049")) {
           console.log(`lỗi login vì dính tài khoản tự động`);
           ditconmemay = true;
         }
@@ -152,7 +150,8 @@ function buildAPI(globalOptions, html, jar) {
     } catch (e) {
         console.log('Using default MQTT endpoint');
     }
-    log.info('login', 'Fix fca by DongDev x Satoru, published By Team Calyx');
+    log.info('login', 'Fix fca by DongDev x Satoru (Cleaned version)');
+    
     var ctx = {
         userID: userID,
         jar: jar,
@@ -176,13 +175,14 @@ function buildAPI(globalOptions, html, jar) {
     };
     var api = {
         setOptions: setOptions.bind(null, globalOptions),
-        getAppState: () => utils.getAppState(jar),
-        postFormData: (url, body) => utils.makeDefaults(html, userID, ctx).postFormData(url, ctx.jar, body)
+        getAppState: () => utils.getAppState(jar)
     };
     var defaultFuncs = utils.makeDefaults(html, userID, ctx);
+    
     api.postFormData = function (url, body) {
         return defaultFuncs.postFormData(url, ctx.jar, body);
     };
+    
     api.getFreshDtsg = async function () {
         try {
             const res = await defaultFuncs.get('https://www.facebook.com/', jar, null, globalOptions);
@@ -218,142 +218,37 @@ function buildAPI(globalOptions, html, jar) {
             return null;
         }
     };
-    //if (noMqttData) api.htmlData = noMqttData;
+    
     require('fs').readdirSync(__dirname + '/src/').filter(v => v.endsWith('.js')).forEach(v => { api[v.replace('.js', '')] = require(`./src/${v}`)(utils.makeDefaults(html, userID, ctx), api, ctx); });
     api.listen = api.listenMqtt;
-    return {
-        ctx,
-        defaultFuncs,
-        api
-    };
-}
-
-function makeLogin(jar, email, password, loginOptions, callback, prCallback) {
-    return async function (res) {
-        try {
-            const html = res.body;
-            const $ = cheerio.load(html);
-            let arr = [];
-            $("#login_form input").each((i, v) => arr.push({ val: $(v).val(), name: $(v).attr("name") }));
-            arr = arr.filter(v => v.val && v.val.length);
-            let form = utils.arrToForm(arr);
-            form.lsd = utils.getFrom(html, "[\"LSD\",[],{\"token\":\"", "\"}");
-            form.lgndim = Buffer.from(JSON.stringify({ w: 1440, h: 900, aw: 1440, ah: 834, c: 24 })).toString('base64');
-            form.email = email;
-            form.pass = password;
-            form.default_persistent = '0';
-            form.lgnrnd = utils.getFrom(html, "name=\"lgnrnd\" value=\"", "\"");
-            form.locale = 'en_US';
-            form.timezone = '240';
-            form.lgnjs = Math.floor(Date.now() / 1000);
-            const willBeCookies = html.split("\"_js_");
-            willBeCookies.slice(1).forEach(val => {
-                const cookieData = JSON.parse("[\"" + utils.getFrom(val, "", "]") + "]");
-                jar.setCookie(utils.formatCookie(cookieData, "facebook"), "https://www.facebook.com");
-            });
-            log.info("login", "Logging in...");
-            const loginRes = await utils.post(
-                "https://www.facebook.com/login/device-based/regular/login/?login_attempt=1&lwv=110",
-                jar,
-                form,
-                loginOptions
-            );
-            await utils.saveCookies(jar)(loginRes);
-            const headers = loginRes.headers;
-            if (!headers.location) throw new Error("Wrong username/password.");
-            if (headers.location.includes('https://www.facebook.com/checkpoint/')) {
-                log.info("login", "You have login approvals turned on.");
-                const checkpointRes = await utils.get(headers.location, jar, null, loginOptions);
-                await utils.saveCookies(jar)(checkpointRes);
-                const checkpointHtml = checkpointRes.body;
-                const $ = cheerio.load(checkpointHtml);
-                let checkpointForm = [];
-                $("form input").each((i, v) => checkpointForm.push({ val: $(v).val(), name: $(v).attr("name") }));
-                checkpointForm = checkpointForm.filter(v => v.val && v.val.length);
-                const form = utils.arrToForm(checkpointForm);
-                if (checkpointHtml.includes("checkpoint/?next")) {
-                    return new Promise((resolve, reject) => {
-                        const submit2FA = async (code) => {
-                            try {
-                                form.approvals_code = code;
-                                form['submit[Continue]'] = $("#checkpointSubmitButton").html();
-                                const approvalRes = await utils.post(
-                                    "https://www.facebook.com/checkpoint/?next=https%3A%2F%2Fwww.facebook.com%2Fhome.php",
-                                    jar,
-                                    form,
-                                    loginOptions
-                                );
-                                await utils.saveCookies(jar)(approvalRes);
-                                const approvalError = $("#approvals_code").parent().attr("data-xui-error");
-                                if (approvalError) throw new Error("Invalid 2FA code.");
-                                form.name_action_selected = 'dont_save';
-                                const finalRes = await utils.post(
-                                    "https://www.facebook.com/checkpoint/?next=https%3A%2F%2Fwww.facebook.com%2Fhome.php",
-                                    jar,
-                                    form,
-                                    loginOptions
-                                );
-                                await utils.saveCookies(jar)(finalRes);
-                                const appState = utils.getAppState(jar);
-                                resolve(await loginHelper(appState, email, password, loginOptions, callback));
-                            } catch (error) {
-                                reject(error);
-                            }
-                        };
-                        throw {
-                            error: 'login-approval',
-                            continue: submit2FA
-                        };
-                    });
-                }
-                if (!loginOptions.forceLogin) throw new Error("Couldn't login. Facebook might have blocked this account.");
-                form['submit[This was me]'] = checkpointHtml.includes("Suspicious Login Attempt") ? "This was me" : "This Is Okay";
-                await utils.post("https://www.facebook.com/checkpoint/?next=https%3A%2F%2Fwww.facebook.com%2Fhome.php", jar, form, loginOptions);
-                form.name_action_selected = 'save_device';
-                const reviewRes = await utils.post("https://www.facebook.com/checkpoint/?next=https%3A%2F%2Fwww.facebook.com%2Fhome.php", jar, form, loginOptions);
-                const appState = utils.getAppState(jar);
-                return await loginHelper(appState, email, password, loginOptions, callback);
-            }
-            await utils.get('https://www.facebook.com/', jar, null, loginOptions);
-            return await utils.saveCookies(jar);
-        } catch (error) {
-            callback(error);
-        }
-    };
+    
+    return { ctx, defaultFuncs, api };
 }
 
 
-function loginHelper(appState, email, password, globalOptions, callback, prCallback) {
+
+function loginHelper(appState, globalOptions, callback, prCallback) {
     let mainPromise = null;
     const jar = utils.getJar();
-    if (appState) {
+    
+    if (typeof appState === 'string') {
         try {
             appState = JSON.parse(appState);
         } catch (e) {
-            try {
-                appState = appState;
-            } catch (e) {
-                return callback(new Error("Failed to parse appState"));
-            }
+            return callback(new Error("Failed to parse appState. Kiểm tra lại appstate!"));
         }
+    }
 
-        try {
-            appState.forEach(c => {
-                const str = `${c.key}=${c.value}; expires=${c.expires}; domain=${c.domain}; path=${c.path};`;
-                jar.setCookie(str, "http://" + c.domain);
-            });
+    try {
+        appState.forEach(c => {
+            const str = `${c.key}=${c.value}; expires=${c.expires}; domain=${c.domain}; path=${c.path};`;
+            jar.setCookie(str, "http://" + c.domain);
+        });
 
-            mainPromise = utils.get('https://www.facebook.com/', jar, null, globalOptions, { noRef: true })
-                .then(utils.saveCookies(jar));
-        } catch (e) {
-            process.exit(0);
-        }
-    } else {
-        mainPromise = utils
-            .get("https://www.facebook.com/", null, null, globalOptions, { noRef: true })
-            .then(utils.saveCookies(jar))
-            .then(makeLogin(jar, email, password, globalOptions, callback, prCallback))
-            .then(() => utils.get('https://www.facebook.com/', jar, null, globalOptions).then(utils.saveCookies(jar)));
+        mainPromise = utils.get('https://www.facebook.com/', jar, null, globalOptions, { noRef: true })
+            .then(utils.saveCookies(jar));
+    } catch (e) {
+        return callback(new Error("Format AppState không đúng hoặc bị lỗi!"));
     }
 
     function handleRedirect(res) {
@@ -397,7 +292,7 @@ function loginHelper(appState, email, password, globalOptions, callback, prCallb
 
     mainPromise
         .then(async () => {
-            log.info('Đăng nhập thành công');
+            log.info('Đăng nhập thành công bằng AppState (Logged in via Cookies)');
             callback(null, api);
         })
         .catch(e => {
@@ -442,19 +337,16 @@ function login(loginData, options, callback) {
         callback = prCallback;
     }
 
-    if (loginData.email && loginData.password) {
-        setOptions(globalOptions, {
-            logLevel: "silent",
-            forceLogin: true,
-            userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
-        });
-        loginHelper(loginData.appState, loginData.email, loginData.password, globalOptions, callback, prCallback);
-    } else if (loginData.appState) {
-        setOptions(globalOptions, options);
-        return loginHelper(loginData.appState, loginData.email, loginData.password, globalOptions, callback, prCallback);
+    if (!loginData.appState) {
+        log.error("login", "Vui lòng cung cấp appState (Cookies) để đăng nhập!");
+        callback(new Error("appState is required."));
+        return returnPromise;
     }
+
+    setOptions(globalOptions, options);
+    loginHelper(loginData.appState, globalOptions, callback, prCallback);
+    
     return returnPromise;
 }
-
 
 module.exports = login;
