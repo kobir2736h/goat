@@ -1,5 +1,6 @@
 // @ts-nocheck
 /* eslint-disable no-undef */
+
 /* eslint-disable no-prototype-builtins */
 
 "use strict";
@@ -849,15 +850,15 @@ function getAdminTextMessageType(m) {
 
 function getGenderByPhysicalMethod(name) {
     const female_name = [
-        "sumaiya", 
-        "rahima",
-        "munni",
-        "trisha",
-        "mim",
-        "sumona",
-        "asha",
-        "trisha",
-        "suraiya"
+        "Phương Chi",
+        "Ðoan Trang",
+        "Ðài Trang",
+        "Đông Trà",
+        "Đông Tuyền",
+        "Đông Vy",
+        "Đơn Thuần",
+        "Đức Hạnh",
+        "Ấu Lăng"
     ]
     let OtherName = [".", ",", "/", "%", "&", "*", "-", "+"];
     try {
