@@ -63,15 +63,15 @@ function buildAPI(globalOptions, html, jar) {
                 if (!fb_dtsg) {
                     const scriptText = $(script).html() || '';
                     const patterns = [
-                        /,{"token":"([^"]+)"}]/,
-                        /,{"token":"([^"]+)"/,
-                        /"token":"([^"]+)"/,
-                        /{\"token\":\"([^\]+)\"/,
-                        /,{"token":"([^"]+)"},\d+]/,
-                        /"async_get_token":"([^"]+)"/,
-                        /"dtsg":{"token":"([^"]+)"/,
-                        /DTSGInitialData[^>]+>([^<]+)/
-                    ];
+    /,{"token":"([^"]+)"}]/,
+    /,{"token":"([^"]+)"/,
+    /"token":"([^"]+)"/,
+    /{\"token\":\"([^\"]+)\"/,
+    /,{"token":"([^"]+)"},\d+]/,
+    /"async_get_token":"([^"]+)"/,
+    /"dtsg":{"token":"([^"]+)"/,
+    /DTSGInitialData[^>]+>([^<]+)/
+];
                     for (const pattern of patterns) {
                         const match = scriptText.match(pattern);
                         if (match && match[1]) {
