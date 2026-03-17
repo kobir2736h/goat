@@ -15,8 +15,6 @@ const { configCommands } = GoatBot;
 
 const regExpCheckPackage = /require(\s+|)\((\s+|)[`'"]([^`'"]+)[`'"](\s+|)\)/g;
 const packageAlready = [];
-const spinner = ['⠋','⠙','⠹','⠸','⠼','⠴','⠦','⠧','⠇','⠏'];
-let count = 0;
 
 module.exports = async function (api, threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData) {
 
@@ -68,7 +66,7 @@ module.exports = async function (api, threadModel, userModel, dashBoardModel, gl
             const pathCommand = path.normalize(fullPathModules + "/" + file);
 
             try {
-                // 🔥 PACKAGE CHECK (UPDATED)
+                // 🔥 PACKAGE CHECK
                 const contentFile = readFileSync(pathCommand, "utf8");
                 let allPackage = contentFile.match(regExpCheckPackage);
 
@@ -94,19 +92,11 @@ module.exports = async function (api, threadModel, userModel, dashBoardModel, gl
                             packageAlready.push(packageName);
 
                             if (!existsSync(`${process.cwd()}/node_modules/${packageName}`)) {
-                                const wating = setInterval(() => {
-                                    console.log(`${spinner[count % spinner.length]} Installing ${packageName} for ${text} ${file}`);
-                                    count++;
-                                }, 80);
-
                                 try {
+                                    console.log(`Installing ${packageName} for ${text} ${file}...`);
                                     await exec(`npm install ${packageName} --save`);
-                                    clearInterval(wating);
-                                    process.stderr.write('\r\x1b[K');
                                     console.log(`✔ Installed ${packageName}`);
                                 } catch (err) {
-                                    clearInterval(wating);
-                                    process.stderr.write('\r\x1b[K');
                                     console.log(`✖ Failed ${packageName}`);
                                     throw new Error(`Can't install ${packageName}`);
                                 }
