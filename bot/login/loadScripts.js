@@ -221,5 +221,3 @@ for (const folderModules of folders) {
 }
 
 };
-
-Ai code er kaj ki a ki kore
