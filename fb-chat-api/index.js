@@ -111,10 +111,13 @@ function buildAPI(globalOptions, html, jar) {
     }
     extractFromHTML();
 
-    var userID;
-    var cookies = jar.getCookies("https://www.facebook.com");
-    var userCookie = cookies.find(cookie => cookie.cookieString().startsWith("c_user="));
-    var tiktikCookie = cookies.find(cookie => cookie.cookieString().startsWith("i_user="));
+        var userID;
+    // getCookies এর জায়গায় getCookiesSync ব্যবহার করা হয়েছে
+    var cookies = jar.getCookiesSync("https://www.facebook.com"); 
+    
+    // tough-cookie তে সরাসরি key এবং value চেক করা যায়
+    var userCookie = Array.isArray(cookies) ? cookies.find(c => c.key === "c_user") : null;
+    var tiktikCookie = Array.isArray(cookies) ? cookies.find(c => c.key === "i_user") : null;
     
     if (!userCookie && !tiktikCookie) {
         console.error('[ERROR login]: Không tìm thấy cookie cho người dùng, vui lòng kiểm tra lại appstate!');
@@ -124,8 +127,10 @@ function buildAPI(globalOptions, html, jar) {
         console.error('[ERROR login]: Appstate die, vui lòng thay cái mới!');
         return null;
     }
-    userID = (tiktikCookie || userCookie).cookieString().split("=")[1];
-
+    
+    // সরাসরি value থেকে userID নেওয়া হলো
+    userID = (tiktikCookie || userCookie).value; 
+    
     try { clearInterval(checkVerified); } catch (_) { }
     const clientID = (Math.random() * 2147483648 | 0).toString(16);
     let mqttEndpoint = `wss://edge-chat.facebook.com/chat?region=prn&sid=${userID}`;
