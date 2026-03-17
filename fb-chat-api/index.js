@@ -2,12 +2,10 @@
 
 var utils = require("./utils");
 var cheerio = require("cheerio");
-var log = require("npmlog");
 
-log.maxRecordSize = 100;
-var checkVerified = null;
 const Boolean_Option = ['online', 'selfListen', 'listenEvents', 'updatePresence', 'forceLogin', 'autoMarkDelivery', 'autoMarkRead', 'listenTyping', 'autoReconnect', 'emitReady'];
 global.ditconmemay = false;
+var checkVerified = null;
 
 function setOptions(globalOptions, options) {
     Object.keys(options).map(function (key) {
@@ -18,21 +16,13 @@ function setOptions(globalOptions, options) {
             }
             case false: {
                 switch (key) {
-                    case 'pauseLog': {
-                        if (options.pauseLog) log.pause();
-                        else log.resume();
+                    case 'pauseLog':
+                    case 'logLevel':
+                    case 'logRecordSize':
+                        // npmlog রিমুভ করা হয়েছে, তাই এগুলো এখন আর কোনো কাজ করবে না। 
+                        // তবে পুরনো কোড যেন ক্র্যাশ না করে তাই এগুলো ইগনোর করা হলো।
+                        globalOptions[key] = options[key];
                         break;
-                    }
-                    case 'logLevel': {
-                        log.level = options.logLevel;
-                        globalOptions.logLevel = options.logLevel;
-                        break;
-                    }
-                    case 'logRecordSize': {
-                        log.maxRecordSize = options.logRecordSize;
-                        globalOptions.logRecordSize = options.logRecordSize;
-                        break;
-                    }
                     case 'pageID': {
                         globalOptions.pageID = options.pageID.toString();
                         break;
@@ -52,7 +42,7 @@ function setOptions(globalOptions, options) {
                         break;
                     }
                     default: {
-                        log.warn("setOptions", "Unrecognized option given to setOptions: " + key);
+                        console.warn("[WARN setOptions]: Unrecognized option given to setOptions: " + key);
                         break;
                     }
                 }
@@ -65,6 +55,7 @@ function setOptions(globalOptions, options) {
 function buildAPI(globalOptions, html, jar) {
     let fb_dtsg = null;
     let irisSeqID = null;
+
     function extractFromHTML() {
         try {
             const $ = cheerio.load(html);
@@ -72,20 +63,20 @@ function buildAPI(globalOptions, html, jar) {
                 if (!fb_dtsg) {
                     const scriptText = $(script).html() || '';
                     const patterns = [
-                        /\["DTSGInitialData",\[\],{"token":"([^"]+)"}]/,
-                        /\["DTSGInitData",\[\],{"token":"([^"]+)"/,
+                        /,{"token":"([^"]+)"}]/,
+                        /,{"token":"([^"]+)"/,
                         /"token":"([^"]+)"/,
-                        /{\\"token\\":\\"([^\\]+)\\"/,
-                        /,\{"token":"([^"]+)"\},\d+\]/,
+                        /{\"token\":\"([^\]+)\"/,
+                        /,{"token":"([^"]+)"},\d+]/,
                         /"async_get_token":"([^"]+)"/,
-                        /"dtsg":\{"token":"([^"]+)"/,
+                        /"dtsg":{"token":"([^"]+)"/,
                         /DTSGInitialData[^>]+>([^<]+)/
                     ];
                     for (const pattern of patterns) {
                         const match = scriptText.match(pattern);
                         if (match && match[1]) {
                             try {
-                                const possibleJson = match[1].replace(/\\"/g, '"');
+                                const possibleJson = match[1].replace(/\"/g, '"');
                                 const parsed = JSON.parse(possibleJson);
                                 fb_dtsg = parsed.token || parsed;
                             } catch {
@@ -105,32 +96,36 @@ function buildAPI(globalOptions, html, jar) {
                 irisSeqID = seqMatches[1];
             }
             try {
-                const jsonMatches = html.match(/\{"dtsg":({[^}]+})/);
+                const jsonMatches = html.match(/{"dtsg":({[^}]+})/);
                 if (jsonMatches && jsonMatches[1]) {
                     const dtsgData = JSON.parse(jsonMatches[1]);
                     if (dtsgData.token) fb_dtsg = dtsgData.token;
                 }
             } catch { }
             if (fb_dtsg) {
-                console.log("Đã tìm thấy fb_dtsg");
+                console.log("[INFO]: Đã tìm thấy fb_dtsg");
             }
         } catch (e) {
-            console.log("Lỗi khi tìm fb_dtsg:", e);
+            console.error("[ERROR]: Lỗi khi tìm fb_dtsg:", e.message);
         }
     }
     extractFromHTML();
+
     var userID;
     var cookies = jar.getCookies("https://www.facebook.com");
     var userCookie = cookies.find(cookie => cookie.cookieString().startsWith("c_user="));
     var tiktikCookie = cookies.find(cookie => cookie.cookieString().startsWith("i_user="));
+    
     if (!userCookie && !tiktikCookie) {
-        return log.error('login', "Không tìm thấy cookie cho người dùng, vui lòng kiểm tra lại appstate!");
+        console.error('[ERROR login]: Không tìm thấy cookie cho người dùng, vui lòng kiểm tra lại appstate!');
+        return null;
     }
     if (html.includes("/checkpoint/block/?next")) {
-        return log.error('login', "Appstate die, vui lòng thay cái mới!", 'error');
+        console.error('[ERROR login]: Appstate die, vui lòng thay cái mới!');
+        return null;
     }
     userID = (tiktikCookie || userCookie).cookieString().split("=")[1];
-    
+
     try { clearInterval(checkVerified); } catch (_) { }
     const clientID = (Math.random() * 2147483648 | 0).toString(16);
     let mqttEndpoint = `wss://edge-chat.facebook.com/chat?region=prn&sid=${userID}`;
@@ -139,8 +134,8 @@ function buildAPI(globalOptions, html, jar) {
     try {
         const endpointMatch = html.match(/"endpoint":"([^"]+)"/);
         if (endpointMatch && endpointMatch.input.includes("601051028565049")) {
-          console.log(`lỗi login vì dính tài khoản tự động`);
-          ditconmemay = true;
+            console.log(`[INFO]: lỗi login vì dính tài khoản tự động`);
+            ditconmemay = true;
         }
         if (endpointMatch) {
             mqttEndpoint = endpointMatch[1].replace(/\\\//g, '/');
@@ -148,10 +143,11 @@ function buildAPI(globalOptions, html, jar) {
             region = url.searchParams.get('region')?.toUpperCase() || "PRN";
         }
     } catch (e) {
-        console.log('Using default MQTT endpoint');
+        console.log('[INFO]: Using default MQTT endpoint');
     }
-    log.info('login', 'Fix fca by DongDev x Satoru (Cleaned version)');
     
+    console.log('[INFO login]: Fix fca by DongDev x Satoru (Cleaned & Axios Ready)');
+
     var ctx = {
         userID: userID,
         jar: jar,
@@ -173,24 +169,26 @@ function buildAPI(globalOptions, html, jar) {
         wsTaskNumber: 0,
         reqCallbacks: {}
     };
+    
     var api = {
         setOptions: setOptions.bind(null, globalOptions),
         getAppState: () => utils.getAppState(jar)
     };
     var defaultFuncs = utils.makeDefaults(html, userID, ctx);
-    
+
     api.postFormData = function (url, body) {
         return defaultFuncs.postFormData(url, ctx.jar, body);
     };
-    
+
     api.getFreshDtsg = async function () {
         try {
             const res = await defaultFuncs.get('https://www.facebook.com/', jar, null, globalOptions);
-            const $ = cheerio.load(res.body);
+            const htmlData = res.data || res.body; // Support both axios and request
+            const $ = cheerio.load(htmlData);
             let newDtsg;
             const patterns = [
-                /\["DTSGInitialData",\[\],{"token":"([^"]+)"}]/,
-                /\["DTSGInitData",\[\],{"token":"([^"]+)"/,
+                /"DTSGInitialData",\[,{"token":"([^"]+)"}]/,
+                /"DTSGInitData",\[,{"token":"([^"]+)"/,
                 /"token":"([^"]+)"/,
                 /name="fb_dtsg" value="([^"]+)"/
             ];
@@ -214,23 +212,22 @@ function buildAPI(globalOptions, html, jar) {
 
             return newDtsg;
         } catch (e) {
-            console.log("Error getting fresh dtsg:", e);
+            console.error("[ERROR]: Error getting fresh dtsg:", e.message);
             return null;
         }
     };
+
+    require('fs').readdirSync(__dirname + '/src/').filter(v => v.endsWith('.js')).forEach(v => { 
+        api[v.replace('.js', '')] = require(`./src/${v}`)(utils.makeDefaults(html, userID, ctx), api, ctx); 
+    });
     
-    require('fs').readdirSync(__dirname + '/src/').filter(v => v.endsWith('.js')).forEach(v => { api[v.replace('.js', '')] = require(`./src/${v}`)(utils.makeDefaults(html, userID, ctx), api, ctx); });
     api.listen = api.listenMqtt;
-    
     return { ctx, defaultFuncs, api };
 }
 
-
-
-function loginHelper(appState, globalOptions, callback, prCallback) {
-    let mainPromise = null;
+async function loginHelper(appState, globalOptions, callback) {
     const jar = utils.getJar();
-    
+
     if (typeof appState === 'string') {
         try {
             appState = JSON.parse(appState);
@@ -245,61 +242,61 @@ function loginHelper(appState, globalOptions, callback, prCallback) {
             jar.setCookie(str, "http://" + c.domain);
         });
 
-        mainPromise = utils.get('https://www.facebook.com/', jar, null, globalOptions, { noRef: true })
-            .then(utils.saveCookies(jar));
-    } catch (e) {
-        return callback(new Error("Format AppState không đúng hoặc bị lỗi!"));
-    }
+        // Step 1: Request Home Page
+        let res = await utils.get('https://www.facebook.com/', jar, null, globalOptions, { noRef: true });
+        utils.saveCookies(jar)(res);
 
-    function handleRedirect(res) {
+        let html = res.data || res.body; // Support both axios and request
+
+        // Step 2: Handle Redirect if any
         const reg = /<meta http-equiv="refresh" content="0;url=([^"]+)[^>]+>/;
-        const redirect = reg.exec(res.body);
+        let redirect = reg.exec(html);
         if (redirect && redirect[1]) {
-            return utils.get(redirect[1], jar, null, globalOptions).then(utils.saveCookies(jar));
+            res = await utils.get(redirect[1], jar, null, globalOptions);
+            utils.saveCookies(jar)(res);
+            html = res.data || res.body;
         }
-        return res;
-    }
 
-    let ctx, api;
-    mainPromise = mainPromise
-        .then(handleRedirect)
-        .then(res => {
-            const mobileAgentRegex = /MPageLoadClientMetrics/gs;
-            if (!mobileAgentRegex.test(res.body)) {
-                globalOptions.userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36";
-                return utils.get('https://www.facebook.com/', jar, null, globalOptions, { noRef: true }).then(utils.saveCookies(jar));
+        // Step 3: Check Mobile Agent
+        const mobileAgentRegex = /MPageLoadClientMetrics/gs;
+        if (!mobileAgentRegex.test(html)) {
+            globalOptions.userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36";
+            res = await utils.get('https://www.facebook.com/', jar, null, globalOptions, { noRef: true });
+            utils.saveCookies(jar)(res);
+            html = res.data || res.body;
+            
+            // Recheck redirect
+            redirect = reg.exec(html);
+            if (redirect && redirect[1]) {
+                res = await utils.get(redirect[1], jar, null, globalOptions);
+                utils.saveCookies(jar)(res);
+                html = res.data || res.body;
             }
-            return res;
-        })
-        .then(handleRedirect)
-        .then(res => {
-            const html = res.body;
-            const Obj = buildAPI(globalOptions, html, jar);
-            ctx = Obj.ctx;
-            api = Obj.api;
-            return res;
-        });
+        }
 
-    if (globalOptions.pageID) {
-        mainPromise = mainPromise
-            .then(() => utils.get(`https://www.facebook.com/${globalOptions.pageID}/messages/?section=messages&subsection=inbox`, jar, null, globalOptions))
-            .then(resData => {
-                let url = utils.getFrom(resData.body, 'window.location.replace("https:\\/\\/www.facebook.com\\', '");').split('\\').join('');
-                url = url.substring(0, url.length - 1);
-                return utils.get('https://www.facebook.com' + url, jar, null, globalOptions);
-            });
+        // Step 4: Build API
+        const Obj = buildAPI(globalOptions, html, jar);
+        if (!Obj) return callback(new Error("Login failed. Check logs."));
+        
+        const { api } = Obj;
+
+        // Step 5: Handle Page ID if exists
+        if (globalOptions.pageID) {
+            let resData = await utils.get(`https://www.facebook.com/${globalOptions.pageID}/messages/?section=messages&subsection=inbox`, jar, null, globalOptions);
+            let pageHtml = resData.data || resData.body;
+            let url = utils.getFrom(pageHtml, 'window.location.replace("https:\\/\\/www.facebook.com\\', '");').split('\\').join('');
+            url = url.substring(0, url.length - 1);
+            await utils.get('https://www.facebook.com' + url, jar, null, globalOptions);
+        }
+
+        console.log('[INFO login]: Đăng nhập thành công bằng AppState (Logged in via Cookies)');
+        callback(null, api);
+
+    } catch (e) {
+        console.error('[ERROR login Helper]:', e.message);
+        callback(e);
     }
-
-    mainPromise
-        .then(async () => {
-            log.info('Đăng nhập thành công bằng AppState (Logged in via Cookies)');
-            callback(null, api);
-        })
-        .catch(e => {
-            callback(e);
-        });
 }
-
 
 function login(loginData, options, callback) {
     if (utils.getType(options) === 'Function' || utils.getType(options) === 'AsyncFunction') {
@@ -338,14 +335,14 @@ function login(loginData, options, callback) {
     }
 
     if (!loginData.appState) {
-        log.error("login", "Vui lòng cung cấp appState (Cookies) để đăng nhập!");
+        console.error("[ERROR login]: Vui lòng cung cấp appState (Cookies) để đăng nhập!");
         callback(new Error("appState is required."));
-        return returnPromise;
+        return returnPromise || null;
     }
 
     setOptions(globalOptions, options);
-    loginHelper(loginData.appState, globalOptions, callback, prCallback);
-    
+    loginHelper(loginData.appState, globalOptions, callback);
+
     return returnPromise;
 }
 
