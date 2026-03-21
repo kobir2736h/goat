@@ -39,42 +39,6 @@ const driveApi = google.drive({
     auth: oauth2ClientForGGDrive
 });
 
-const word = [
-    'A', 'Á', 'À', 'Ả', 'Ã', 'Ạ', 'a', 'á', 'à', 'ả', 'ã', 'ạ',
-    'Ă', 'Ắ', 'Ằ', 'Ẳ', 'Ẵ', 'Ặ', 'ă', 'ắ', 'ằ', 'ẳ', 'ẵ', 'ặ',
-    'Â', 'Ấ', 'Ầ', 'Ẩ', 'Ẫ', 'Ậ', 'â', 'ấ', 'ầ', 'ẩ', 'ẫ', 'ậ',
-    'B', 'b',
-    'C', 'c',
-    'D', 'Đ', 'd', 'đ',
-    'E', 'É', 'È', 'Ẻ', 'Ẽ', 'Ẹ', 'e', 'é', 'è', 'ẻ', 'ẽ', 'ẹ',
-    'Ê', 'Ế', 'Ề', 'Ể', 'Ễ', 'Ệ', 'ê', 'ế', 'ề', 'ể', 'ễ', 'ệ',
-    'F', 'f',
-    'G', 'g',
-    'H', 'h',
-    'I', 'Í', 'Ì', 'Ỉ', 'Ĩ', 'Ị', 'i', 'í', 'ì', 'ỉ', 'ĩ', 'ị',
-    'J', 'j',
-    'K', 'k',
-    'L', 'l',
-    'M', 'm',
-    'N', 'n',
-    'O', 'Ó', 'Ò', 'Ỏ', 'Õ', 'Ọ', 'o', 'ó', 'ò', 'ỏ', 'õ', 'ọ',
-    'Ô', 'Ố', 'Ồ', 'Ổ', 'Ỗ', 'Ộ', 'ô', 'ố', 'ồ', 'ổ', 'ỗ', 'ộ',
-    'Ơ', 'Ớ', 'Ờ', 'Ở', 'Ỡ', 'Ợ', 'ơ', 'ớ', 'ờ', 'ở', 'ỡ', 'ợ',
-    'P', 'p',
-    'Q', 'q',
-    'R', 'r',
-    'S', 's',
-    'T', 't',
-    'U', 'Ú', 'Ù', 'Ủ', 'Ũ', 'Ụ', 'u', 'ú', 'ù', 'ủ', 'ũ', 'ụ',
-    'Ư', 'Ứ', 'Ừ', 'Ử', 'Ữ', 'Ự', 'ư', 'ứ', 'ừ', 'ử', 'ữ', 'ự',
-    'V', 'v',
-    'W', 'w',
-    'X', 'x',
-    'Y', 'Ý', 'Ỳ', 'Ỷ', 'Ỹ', 'Ỵ', 'y', 'ý', 'ỳ', 'ỷ', 'ỹ', 'ỵ',
-    'Z', 'z',
-    ' '
-];
-
 const regCheckURL = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/;
 
 class CustomError extends Error {
@@ -86,28 +50,6 @@ class CustomError extends Error {
         obj.message ? super(obj.message) : super();
         Object.assign(this, obj);
     }
-}
-
-function lengthWhiteSpacesEndLine(text) {
-    let length = 0;
-    for (let i = text.length - 1; i >= 0; i--) {
-        if (text[i] == ' ')
-            length++;
-        else
-            break;
-    }
-    return length;
-}
-
-function lengthWhiteSpacesStartLine(text) {
-    let length = 0;
-    for (let i = 0; i < text.length; i++) {
-        if (text[i] == ' ')
-            length++;
-        else
-            break;
-    }
-    return length;
 }
 
 function setErrorUptime() {
@@ -211,6 +153,10 @@ function getExtFromUrl(url = "") {
     const reg = /(?<=https:\/\/cdn.fbsbx.com\/v\/.*?\/|https:\/\/video.xx.fbcdn.net\/v\/.*?\/|https:\/\/scontent.xx.fbcdn.net\/v\/.*?\/).*?(\/|\?)/g;
     const fileName = url.match(reg)[0].slice(0, -1);
     return fileName.slice(fileName.lastIndexOf(".") + 1);
+}
+
+function getExtFromMimeType(mimeType = "") {
+    return mimeDB[mimeType] ? (mimeDB[mimeType].extensions || [])[0] || "unknow" : "unknow";
 }
 
 function getPrefix(threadID) {
@@ -417,104 +363,6 @@ async function getStreamFromURL(url = "", pathName = "", options = {}) {
     }
     catch (err) {
         throw err;
-    }
-}
-
-function getExtFromMimeType(mimeType = "") {
-    return mimeDB[mimeType] ? (mimeDB[mimeType].extensions || [])[0] || "unknow" : "unknow";
-}
-
-async function translate(text, lang) {
-    if (typeof text !== "string")
-        throw new Error(`The first argument (text) must be a string`);
-    if (!lang)
-        lang = 'en';
-    if (typeof lang !== "string")
-        throw new Error(`The second argument (lang) must be a string`);
-    const wordTranslate = [''];
-    const wordNoTranslate = [''];
-    const wordTransAfter = [];
-    let lastPosition = 'wordTranslate';
-
-    if (word.indexOf(text.charAt(0)) == -1)
-        wordTranslate.push('');
-    else
-        wordNoTranslate.splice(0, 1);
-
-    for (let i = 0; i < text.length; i++) {
-        const char = text[i];
-        if (word.indexOf(char) !== -1) {
-            const lengWordNoTranslate = wordNoTranslate.length - 1;
-            if (wordNoTranslate[lengWordNoTranslate] && wordNoTranslate[lengWordNoTranslate].includes('{') && !wordNoTranslate[lengWordNoTranslate].includes('}')) {
-                wordNoTranslate[lengWordNoTranslate] += char;
-                continue;
-            }
-            const lengWordTranslate = wordTranslate.length - 1;
-            if (lastPosition == 'wordTranslate') {
-                wordTranslate[lengWordTranslate] += char;
-            }
-            else {
-                wordTranslate.push(char);
-                lastPosition = 'wordTranslate';
-            }
-        }
-        else {
-            const lengWordNoTranslate = wordNoTranslate.length - 1;
-            const twoWordLast = wordNoTranslate[lengWordNoTranslate]?.slice(-2) || '';
-            if (lastPosition == 'wordNoTranslate') {
-                if (twoWordLast == '}}') {
-                    wordTranslate.push("");
-                    wordNoTranslate.push(char);
-                }
-                else
-                    wordNoTranslate[lengWordNoTranslate] += char;
-            }
-            else {
-                wordNoTranslate.push(char);
-                lastPosition = 'wordNoTranslate';
-            }
-        }
-    }
-
-    for (let i = 0; i < wordTranslate.length; i++) {
-        const text = wordTranslate[i];
-        if (!text.match(/[^\s]+/))
-            wordTransAfter.push(text);
-        else
-            wordTransAfter.push(translateAPI(text, lang));
-    }
-
-    let output = '';
-
-    for (let i = 0; i < wordTransAfter.length; i++) {
-        let wordTrans = (await wordTransAfter[i]);
-        if (wordTrans.trim().length === 0) {
-            output += wordTrans;
-            if (wordNoTranslate[i] != undefined)
-                output += wordNoTranslate[i];
-            continue;
-        }
-
-        wordTrans = wordTrans.trim();
-        const numberStartSpace = lengthWhiteSpacesStartLine(wordTranslate[i]);
-        const numberEndSpace = lengthWhiteSpacesEndLine(wordTranslate[i]);
-
-        wordTrans = ' '.repeat(numberStartSpace) + wordTrans.trim() + ' '.repeat(numberEndSpace);
-
-        output += wordTrans;
-        if (wordNoTranslate[i] != undefined)
-            output += wordNoTranslate[i];
-    }
-    return output;
-}
-
-async function translateAPI(text, lang) {
-    try {
-        const res = await axios.get(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${lang}&dt=t&q=${encodeURIComponent(text)}`);
-        return res.data[0][0][0];
-    }
-    catch (err) {
-        throw new CustomError(err.response ? err.response.data : err);
     }
 }
 
@@ -786,7 +634,6 @@ const utils = {
     getStreamsFromAttachment,
     getStreamFromURL,
     Prism,
-    translate,
     shortenURL,
     uploadZippyshare,
     uploadImgbb,
