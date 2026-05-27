@@ -14,18 +14,8 @@ const http = require("http");
 const server = http.createServer(app);
 
 const imageExt = ["png", "gif", "webp", "jpeg", "jpg"];
-const videoExt = ["webm", "mkv", "flv", "vob", "ogv", "ogg", "rrc", "gifv",
-	"mng", "mov", "avi", "qt", "wmv", "yuv", "rm", "asf", "amv", "mp4",
-	"m4p", "m4v", "mpg", "mp2", "mpeg", "mpe", "mpv", "m4v", "svi", "3gp",
-	"3g2", "mxf", "roq", "nsv", "flv", "f4v", "f4p", "f4a", "f4b", "mod"
-];
-const audioExt = ["3gp", "aa", "aac", "aax", "act", "aiff", "alac", "amr",
-	"ape", "au", "awb", "dss", "dvf", "flac", "gsm", "iklax", "ivs",
-	"m4a", "m4b", "m4p", "mmf", "mp3", "mpc", "msv", "nmf",
-	"ogg", "oga", "mogg", "opus", "ra", "rm", "raw", "rf64", "sln", "tta",
-	"voc", "vox", "wav", "wma", "wv", "webm", "8svx", "cd"
-];
-
+const videoExt = ["webm", "mkv", "flv", "vob", "ogv", "ogg", "rrc", "gifv", "mng", "mov", "avi", "qt", "wmv", "yuv", "rm", "asf", "amv", "mp4", "m4p", "m4v", "mpg", "mp2", "mpeg", "mpe", "mpv", "m4v", "svi", "3gp", "3g2", "mxf", "roq", "nsv", "flv", "f4v", "f4p", "f4a", "f4b", "mod"];
+const audioExt = ["3gp", "aa", "aac", "aax", "act", "aiff", "alac", "amr", "ape", "au", "awb", "dss", "dvf", "flac", "gsm", "iklax", "ivs", "m4a", "m4b", "m4p", "mmf", "mp3", "mpc", "msv", "nmf", "ogg", "oga", "mogg", "opus", "ra", "rm", "raw", "rf64", "sln", "tta", "voc", "vox", "wav", "wma", "wv", "webm", "8svx", "cd"];
 
 module.exports = async (api) => {
 	if (!api)
@@ -36,8 +26,6 @@ module.exports = async (api) => {
 	const { expireVerifyCode } = config.dashBoard;
 	const { gRecaptcha } = config.credentials;
 
-	const getText = global.utils.getText;
-
 	const {
 		threadModel,
 		userModel,
@@ -47,10 +35,7 @@ module.exports = async (api) => {
 		dashBoardData
 	} = global.db;
 
-
-	eta.configure({
-		useWith: true
-	});
+	eta.configure({ useWith: true });
 
 	app.set("views", `${__dirname}/views`);
 	app.engine("eta", eta.renderFile);
@@ -66,54 +51,47 @@ module.exports = async (api) => {
 		cookie: {
 			secure: false,
 			httpOnly: true,
-			maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
+			maxAge: 1000 * 60 * 60 * 24 * 7
 		}
 	}));
 
-
-	// public folder 
 	app.use("/css", express.static(`${__dirname}/css`));
 	app.use("/js", express.static(`${__dirname}/js`));
 	app.use("/images", express.static(`${__dirname}/images`));
-
 	app.use(fileUpload());
 	app.use(flash());
 
-	// 🔴 অটো-লগইন (ফেক ইউজার ডাটা) 🔴
+	// Fake user data (auto-login)
 	app.use(function (req, res, next) {
 		const adminID = config.adminBot[0] || "100000000000000";
-		
+
 		req.user = {
 			facebookUserID: adminID,
 			email: "admin@goatbot.com",
 			isAdmin: true,
 			verifyFacebook: true
 		};
-
 		res.locals.gRecaptcha_siteKey = gRecaptcha.siteKey;
 		res.locals.__dirname = __dirname;
 		res.locals.success = req.flash("success") || [];
 		res.locals.errors = req.flash("errors") || [];
 		res.locals.warnings = req.flash("warnings") || [];
-		res.locals.user = req.user; 
+		res.locals.user = req.user;
 		next();
 	});
 
-	// ————————————————— MIDDLEWARE ————————————————— //
 	const createLimiter = (ms, max) => rateLimit({
-		windowMs: ms, // 5 minutes
+		windowMs: ms,
 		max,
 		handler: (req, res) => {
 			res.status(429).send({
 				status: "error",
-				message: getText("app", "tooManyRequests")
+				message: "Too many requests, please try again later."
 			});
 		}
 	});
 
 	const middleWare = require("./middleware/index.js")(checkAuthConfigDashboardOfThread);
-
-	// ————————————————————————————————————————————— //
 
 	async function checkAuthConfigDashboardOfThread(threadData, userID) {
 		if (!isNaN(threadData))
@@ -130,9 +108,7 @@ module.exports = async (api) => {
 		return verify.data.success;
 	}
 
-
-	// 🔴 সিকিউরিটি মিডলওয়্যার বাইপাস 🔴
-	const bypassAuth = (req, res, next) => next(); 
+	const bypassAuth = (req, res, next) => next();
 
 	const unAuthenticated = bypassAuth;
 	const isWaitVerifyAccount = bypassAuth;
@@ -143,15 +119,13 @@ module.exports = async (api) => {
 	const {
 		checkHasAndInThread,
 		middlewareCheckAuthConfigDashboardOfThread
-	} = middleWare; 
+	} = middleWare;
 
 	const paramsForRoutes = {
 		unAuthenticated, isWaitVerifyAccount, isAdmin, isAuthenticated,
 		isVeryfiUserIDFacebook, checkHasAndInThread, middlewareCheckAuthConfigDashboardOfThread,
-
-		isVerifyRecaptcha, validateEmail, randomNumberApikey, 
+		isVerifyRecaptcha, validateEmail, randomNumberApikey,
 		dashBoardData, expireVerifyCode, isVideoFile,
-
 		threadsData, api, createLimiter, config, checkAuthConfigDashboardOfThread,
 		imageExt, videoExt, audioExt, convertSize, drive, usersData
 	};
@@ -160,7 +134,6 @@ module.exports = async (api) => {
 	const verifyFbidRoute = require("./routes/verifyfbid.js")(paramsForRoutes);
 	const apiRouter = require("./routes/api.js")(paramsForRoutes);
 
-	// 🔴 হোমপেজ থেকে ড্যাশবোর্ডে রিডাইরেক্ট 🔴
 	app.get(["/", "/home"], (req, res) => {
 		res.redirect("/dashboard");
 	});
@@ -169,8 +142,7 @@ module.exports = async (api) => {
 		let fcaVersion;
 		try {
 			fcaVersion = require("fb-chat-api/package.json").version;
-		}
-		catch (e) {
+		} catch (e) {
 			fcaVersion = "unknown";
 		}
 
@@ -198,32 +170,35 @@ module.exports = async (api) => {
 	app.get("/donate", (req, res) => res.render("donate"));
 
 	app.get("/logout", (req, res, next) => {
-		res.redirect("/"); 
+		res.redirect("/");
 	});
 
 	app.post("/changefbstate", isAuthenticated, isVeryfiUserIDFacebook, (req, res) => {
 		if (!global.GoatBot.config.adminBot.includes(req.user.facebookUserID))
 			return res.send({
 				status: "error",
-				message: getText("app", "notPermissionChangeFbstate")
+				message: "You don't have permission to change fbstate."
 			});
+
 		const { fbstate } = req.body;
 		if (!fbstate)
 			return res.send({
 				status: "error",
-				message: getText("app", "notFoundFbstate")
+				message: "fbstate not found."
 			});
 
 		fs.writeFileSync(process.cwd() + (process.env.NODE_ENV == "production" || process.env.NODE_ENV == "development" ? "/account.dev.txt" : "/account.txt"), fbstate);
+
 		res.send({
 			status: "success",
-			message: getText("app", "changedFbstateSuccess")
+			message: "fbstate changed successfully."
 		});
 
 		res.on("finish", () => {
 			process.exit(2);
 		});
 	});
+
 	app.get("/uptime", global.responseUptimeCurrent);
 
 	app.get("/changefbstate", isAuthenticated, isVeryfiUserIDFacebook, isAdmin, (req, res) => {
@@ -240,21 +215,24 @@ module.exports = async (api) => {
 		res.status(404).render("404");
 	});
 
-	// catch global error	
 	app.use((err, req, res, next) => {
 		if (err.message == "Login sessions require session support. Did you forget to use `express-session` middleware?")
-			return res.status(500).send(getText("app", "serverError"));
+			return res.status(500).send("Server error occurred.");
 	});
 
 	const PORT = process.env.PORT || config.dashBoard.port || config.serverUptime.port || 3000;
-	let dashBoardUrl = `https://${process.env.REPL_OWNER
-		? `${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
+
+	let dashBoardUrl = process.env.REPL_OWNER
+		? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
 		: process.env.API_SERVER_EXTERNAL == "https://api.glitch.com"
 			? `${process.env.PROJECT_DOMAIN}.glitch.me`
-			: `localhost:${PORT}`}`;
+			: `localhost:${PORT}`;
+
 	dashBoardUrl.includes("localhost") && (dashBoardUrl = dashBoardUrl.replace("https", "http"));
+
 	await server.listen(PORT);
 	utils.log.info("DASHBOARD", `Dashboard is running: ${dashBoardUrl}`);
+
 	if (config.serverUptime.socket.enable == true)
 		require("../bot/login/socketIO.js")(server);
 };
