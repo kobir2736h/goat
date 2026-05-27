@@ -1,29 +1,28 @@
 const path = require('path');
-const { log, createOraDots, getText } = global.utils;
+const { log, createOraDots } = global.utils;
 
 module.exports = async function (api) {
 	// ———————————————————— LOAD DATA ———————————————————— //
 	console.log("========== DATABASE ==========");
-	
+
 	const controller = await require(path.join(__dirname, '..', '..', 'database/controller/index.js'))(api);
 	const { threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData, sequelize } = controller;
-	
-	log.info('DATABASE', getText('loadData', 'loadThreadDataSuccess', global.db.allThreadData.filter(t => t.threadID.toString().length > 15).length));
-	log.info('DATABASE', getText('loadData', 'loadUserDataSuccess', global.db.allUserData.length));
-	
+
+	log.info('DATABASE', `Loaded ${global.db.allThreadData.filter(t => t.threadID.toString().length > 15).length} threads data`);
+	log.info('DATABASE', `Loaded ${global.db.allUserData.length} users data`);
+
 	if (api && global.GoatBot.config.database.autoSyncWhenStart == true) {
 		console.log("========== AUTO SYNC ==========");
-		
-		const spin = createOraDots(getText('loadData', 'refreshingThreadData'));
+
+		const spin = createOraDots("Refreshing thread data...");
 		try {
-			api.setOptions({
-				logLevel: 'silent'
-			});
+			api.setOptions({ logLevel: 'silent' });
 			spin._start();
+
 			const threadDataWillSet = [];
 			const allThreadData = [...global.db.allThreadData];
 			const allThreadInfo = await api.getThreadList(9999999, null, 'INBOX');
-			
+
 			for (const threadInfo of allThreadInfo) {
 				if (threadInfo.isGroup && !allThreadData.some(thread => thread.threadID === threadInfo.threadID))
 					threadDataWillSet.push(await threadsData.create(threadInfo.threadID, threadInfo));
@@ -37,7 +36,7 @@ module.exports = async function (api) {
 
 			const allThreadDataDontHaveBot = allThreadData.filter(thread => !allThreadInfo.some(thread1 => thread.threadID === thread1.threadID));
 			const botID = api.getCurrentUserID();
-			
+
 			for (const thread of allThreadDataDontHaveBot) {
 				const findMe = thread.members.find(m => m.userID == botID);
 				if (findMe) {
@@ -45,17 +44,18 @@ module.exports = async function (api) {
 					await threadsData.set(thread.threadID, { members: thread.members });
 				}
 			}
-			
+
 			global.db.allThreadData = [
 				...threadDataWillSet,
 				...allThreadDataDontHaveBot
 			];
+
 			spin._stop();
-			log.info('DATABASE', getText('loadData', 'refreshThreadDataSuccess', global.db.allThreadData.length));
+			log.info('DATABASE', `Refreshed ${global.db.allThreadData.length} threads data`);
 		}
 		catch (err) {
 			spin._stop();
-			log.error('DATABASE', getText('loadData', 'refreshThreadDataError'), err);
+			log.error('DATABASE', 'Error refreshing thread data', err);
 		}
 		finally {
 			api.setOptions({
@@ -63,7 +63,7 @@ module.exports = async function (api) {
 			});
 		}
 	}
-	
+
 	return {
 		threadModel: threadModel || null,
 		userModel: userModel || null,
