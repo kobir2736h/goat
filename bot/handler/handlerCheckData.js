@@ -1,6 +1,6 @@
 const { db, utils, GoatBot } = global;
 const { config } = GoatBot;
-const { log, getText } = utils;
+const { log } = utils;
 const { creatingThreadData, creatingUserData } = global.client.database;
 
 module.exports = async function (usersData, threadsData, event) {
@@ -14,6 +14,7 @@ module.exports = async function (usersData, threadsData, event) {
 				return;
 
 			const findInCreatingThreadData = creatingThreadData.find(t => t.threadID == threadID);
+
 			if (!findInCreatingThreadData) {
 				if (global.db.allThreadData.some(t => t.threadID == threadID))
 					return;
@@ -28,16 +29,16 @@ module.exports = async function (usersData, threadsData, event) {
 		catch (err) {
 			if (err.name != "DATA_ALREADY_EXISTS") {
 				global.temp.createThreadDataError.push(threadID);
-				log.err("DATABASE", getText("handlerCheckData", "cantCreateThread", threadID), err);
+				log.err("DATABASE", `Can't create new thread data with threadID: ${threadID}`, err);
 			}
 		}
 	}
-
 
 	// ————————————— CHECK USER DATA ————————————— //
 	if (senderID) {
 		try {
 			const findInCreatingUserData = creatingUserData.find(u => u.userID == senderID);
+
 			if (!findInCreatingUserData) {
 				if (db.allUserData.some(u => u.userID == senderID))
 					return;
@@ -51,7 +52,7 @@ module.exports = async function (usersData, threadsData, event) {
 		}
 		catch (err) {
 			if (err.name != "DATA_ALREADY_EXISTS")
-				log.err("DATABASE", getText("handlerCheckData", "cantCreateUser", senderID), err);
+				log.err("DATABASE", `Can't create new user data with userID: ${senderID}`, err);
 		}
 	}
 };
