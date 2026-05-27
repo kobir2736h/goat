@@ -1,10 +1,9 @@
 const { graphQlQueryToJson } = require("graphql-query-to-json");
 const ora = require("ora");
-const { log, getText } = global.utils;
+const { log } = global.utils;
 const { config } = global.GoatBot;
 const databaseType = config.database.type;
 
-// with add null if not found data
 function fakeGraphql(query, data, obj = {}) {
 	if (typeof query != "string" && typeof query != "object")
 		throw new Error(`The "query" argument must be of type string or object, got ${typeof query}`);
@@ -12,6 +11,7 @@ function fakeGraphql(query, data, obj = {}) {
 		return data;
 	if (typeof query == "string")
 		query = graphQlQueryToJson(query).query;
+
 	const keys = query ? Object.keys(query) : [];
 	for (const key of keys) {
 		if (typeof query[key] === 'object') {
@@ -24,23 +24,18 @@ function fakeGraphql(query, data, obj = {}) {
 			obj[key] = data.hasOwnProperty(key) ? data[key] : null;
 	}
 	return obj;
-	// i don't know why but it's working by Copilot suggestion :)
 }
 
 module.exports = async function (api) {
 	var threadModel, userModel, dashBoardModel, globalModel, sequelize = null;
+
 	switch (databaseType) {
 		case "mongodb": {
 			const spin = ora({
-				text: getText('indexController', 'connectingMongoDB'),
+				text: "Connecting to MongoDB...",
 				spinner: {
 					interval: 80,
-					frames: [
-						'⠋', '⠙', '⠹',
-						'⠸', '⠼', '⠴',
-						'⠦', '⠧', '⠇',
-						'⠏'
-					]
+					frames: ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
 				}
 			});
 			const defaultClearLine = process.stderr.clearLine;
@@ -50,27 +45,22 @@ module.exports = async function (api) {
 				var { threadModel, userModel, dashBoardModel, globalModel } = await require("../connectDB/connectMongoDB.js")(config.database.uriMongodb);
 				spin.stop();
 				process.stderr.clearLine = defaultClearLine;
-				log.info("MONGODB", getText("indexController", "connectMongoDBSuccess"));
+				log.info("MONGODB", "Connected to MongoDB successfully");
 			}
 			catch (err) {
 				spin.stop();
 				process.stderr.clearLine = defaultClearLine;
-				log.err("MONGODB", getText("indexController", "connectMongoDBError"), err);
+				log.err("MONGODB", "Failed to connect to MongoDB", err);
 				process.exit();
 			}
 			break;
 		}
 		case "sqlite": {
 			const spin = ora({
-				text: getText('indexController', 'connectingMySQL'),
+				text: "Connecting to SQLite...",
 				spinner: {
 					interval: 80,
-					frames: [
-						'⠋', '⠙', '⠹',
-						'⠸', '⠼', '⠴',
-						'⠦', '⠧', '⠇',
-						'⠏'
-					]
+					frames: ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
 				}
 			});
 			const defaultClearLine = process.stderr.clearLine;
@@ -80,12 +70,12 @@ module.exports = async function (api) {
 				var { threadModel, userModel, dashBoardModel, globalModel, sequelize } = await require("../connectDB/connectSqlite.js")();
 				process.stderr.clearLine = defaultClearLine;
 				spin.stop();
-				log.info("SQLITE", getText("indexController", "connectMySQLSuccess"));
+				log.info("SQLITE", "Connected to SQLite successfully");
 			}
 			catch (err) {
 				process.stderr.clearLine = defaultClearLine;
 				spin.stop();
-				log.err("SQLITE", getText("indexController", "connectMySQLError"), err);
+				log.err("SQLITE", "Failed to connect to SQLite", err);
 				process.exit();
 			}
 			break;
