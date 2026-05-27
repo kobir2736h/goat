@@ -1,10 +1,5 @@
-// This module will be called if enabled in the config (severUptime.socket.enable = true)
-/**
- * @example for connect to socket.io
- * view file ./connectSocketIO.example.js
- */
 const { Server } = require("socket.io");
-const { log, getText } = global.utils;
+const { log } = global.utils;
 const { config } = global.GoatBot;
 
 module.exports = async (server) => {
@@ -16,11 +11,12 @@ module.exports = async (server) => {
 			throw ('"channelName" is not defined in config');
 		if (!verifyToken)
 			throw ('"verifyToken" is not defined in config');
+
 		io = new Server(server);
-		log.info("SOCKET IO", getText("socketIO", "connected"));
+		log.info("SOCKET IO", "Socket.IO connected successfully");
 	}
 	catch (err) {
-		return log.err("SOCKET IO", getText("socketIO", "error"), err);
+		return log.err("SOCKET IO", "Socket.IO connection error", err);
 	}
 
 	io.on("connection", (socket) => {
@@ -32,14 +28,16 @@ module.exports = async (server) => {
 			socket.disconnect();
 			return;
 		}
+
 		log.info("SOCKET IO", `New client connected to socket: ${socket.id}`);
+
 		io.to(socket.id).emit(channelName, {
 			status: "success",
 			message: "Connected to server successfully"
 		});
+
 		socket.on("disconnect", () => {
 			log.info("SOCKET IO", `Client disconnected from socket: ${socket.id}`);
 		});
 	});
 };
-
