@@ -1,0 +1,643 @@
+const axios = require("axios");
+const fs = require("fs-extra");
+const path = require("path");
+const cheerio = require("cheerio");
+const https = require("https");
+const agent = new https.Agent({
+    rejectUnauthorized: false
+});
+const moment = require("moment-timezone");
+const mimeDB = require("mime-db");
+const _ = require("lodash");
+const { google } = require("googleapis");
+const ora = require("ora");
+const log = require("./logger/log.js");
+const { isHexColor, colors } = require("./func/colors.js");
+const Prism = require("./func/prism.js");
+
+const { config } = global.GoatBot;
+const { gmailAccount } = config.credentials;
+const { clientId, clientSecret, refreshToken, apiKey: googleApiKey } = gmailAccount;
+
+if (!clientId) {
+    log.err("CREDENTIALS", `Please provide a valid clientId in file ${path.normalize(global.client.dirConfig)}`);
+    process.exit();
+}
+if (!clientSecret) {
+    log.err("CREDENTIALS", `Please provide a valid clientSecret in file ${path.normalize(global.client.dirConfig)}`);
+    process.exit();
+}
+if (!refreshToken) {
+    log.err("CREDENTIALS", `Please provide a valid refreshToken in file ${path.normalize(global.client.dirConfig)}`);
+    process.exit();
+}
+
+const oauth2ClientForGGDrive = new google.auth.OAuth2(clientId, clientSecret, "https://developers.google.com/oauthplayground");
+oauth2ClientForGGDrive.setCredentials({ refresh_token: refreshToken });
+const driveApi = google.drive({
+    version: 'v3',
+    auth: oauth2ClientForGGDrive
+});
+
+const regCheckURL = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/;
+
+class CustomError extends Error {
+    constructor(obj) {
+        if (typeof obj === 'string')
+            obj = { message: obj };
+        if (typeof obj !== 'object' || obj === null)
+            throw new TypeError('Object required');
+        obj.message ? super(obj.message) : super();
+        Object.assign(this, obj);
+    }
+}
+
+function setErrorUptime() {
+    global.statusAccountBot = 'block spam';
+    global.responseUptimeCurrent = global.responseUptimeError;
+}
+
+function convertTime(miliSeconds, replaceSeconds = "s", replaceMinutes = "m", replaceHours = "h", replaceDays = "d", replaceMonths = "M", replaceYears = "y", notShowZero = false) {
+    if (typeof replaceSeconds == 'boolean') {
+        notShowZero = replaceSeconds;
+        replaceSeconds = "s";
+    }
+    const second = Math.floor(miliSeconds / 1000 % 60);
+    const minute = Math.floor(miliSeconds / 1000 / 60 % 60);
+    const hour = Math.floor(miliSeconds / 1000 / 60 / 60 % 24);
+    const day = Math.floor(miliSeconds / 1000 / 60 / 60 / 24 % 30);
+    const month = Math.floor(miliSeconds / 1000 / 60 / 60 / 24 / 30 % 12);
+    const year = Math.floor(miliSeconds / 1000 / 60 / 60 / 24 / 30 / 12);
+    let formattedDate = '';
+
+    const dateParts = [
+        { value: year, replace: replaceYears },
+        { value: month, replace: replaceMonths },
+        { value: day, replace: replaceDays },
+        { value: hour, replace: replaceHours },
+        { value: minute, replace: replaceMinutes },
+        { value: second, replace: replaceSeconds }
+    ];
+
+    for (let i = 0; i < dateParts.length; i++) {
+        const datePart = dateParts[i];
+        if (datePart.value)
+            formattedDate += datePart.value + datePart.replace;
+        else if (formattedDate != '')
+            formattedDate += '00' + datePart.replace;
+        else if (i == dateParts.length - 1)
+            formattedDate += '0' + datePart.replace;
+    }
+
+    if (formattedDate == '')
+        formattedDate = '0' + replaceSeconds;
+
+    if (notShowZero)
+        formattedDate = formattedDate.replace(/00\w+/g, '');
+
+    return formattedDate;
+}
+
+function createOraDots(text) {
+    const spin = new ora({
+        text: text,
+        spinner: {
+            interval: 80,
+            frames: [
+                '⠋', '⠙', '⠹',
+                '⠸', '⠼', '⠴',
+                '⠦', '⠧', '⠇',
+                '⠏'
+            ]
+        }
+    });
+    spin._start = () => {
+        spin.start();
+    };
+    spin._stop = () => {
+        spin.stop();
+    };
+    return spin;
+}
+
+class TaskQueue {
+    constructor(callback) {
+        this.queue = [];
+        this.running = null;
+        this.callback = callback;
+    }
+    push(task) {
+        this.queue.push(task);
+        if (this.queue.length == 1)
+            this.next();
+    }
+    next() {
+        if (this.queue.length > 0) {
+            const task = this.queue[0];
+            this.running = task;
+            this.callback(task, async (err, result) => {
+                this.running = null;
+                this.queue.shift();
+                this.next();
+            });
+        }
+    }
+    length() {
+        return this.queue.length;
+    }
+}
+
+function getExtFromUrl(url = "") {
+    if (!url || typeof url !== "string")
+        throw new Error('The first argument (url) must be a string');
+    const reg = /(?<=https:\/\/cdn.fbsbx.com\/v\/.*?\/|https:\/\/video.xx.fbcdn.net\/v\/.*?\/|https:\/\/scontent.xx.fbcdn.net\/v\/.*?\/).*?(\/|\?)/g;
+    const fileName = url.match(reg)[0].slice(0, -1);
+    return fileName.slice(fileName.lastIndexOf(".") + 1);
+}
+
+function getExtFromMimeType(mimeType = "") {
+    return mimeDB[mimeType] ? (mimeDB[mimeType].extensions || [])[0] || "unknow" : "unknow";
+}
+
+function getPrefix(threadID) {
+    if (!threadID || isNaN(threadID))
+        throw new Error('The first argument (threadID) must be a number');
+    threadID = String(threadID);
+    let prefix = global.GoatBot.config.prefix;
+    const threadData = global.db.allThreadData.find(t => t.threadID == threadID);
+    if (threadData)
+        prefix = threadData.data.prefix || prefix;
+    return prefix;
+}
+
+function getTime(timestamps, format) {
+    if (!format && typeof timestamps == 'string') {
+        format = timestamps;
+        timestamps = undefined;
+    }
+    return moment(timestamps).tz(config.timeZone).format(format);
+}
+
+function getType(value) {
+    return Object.prototype.toString.call(value).slice(8, -1);
+}
+
+function isNumber(value) {
+    return !isNaN(parseFloat(value));
+}
+
+function message(api, event) {
+    async function sendMessageError(err) {
+        if (typeof err === "object" && !err.stack)
+            err = utils.removeHomeDir(JSON.stringify(err, null, 2));
+        else
+            err = utils.removeHomeDir(`${err.name || err.error}: ${err.message}`);
+        return await api.sendMessage(utils.getText("utils", "errorOccurred", err), event.threadID, event.messageID);
+    }
+    return {
+        send: async (form, callback) => {
+            try {
+                global.statusAccountBot = 'good';
+                return await api.sendMessage(form, event.threadID, callback);
+            }
+            catch (err) {
+                if (JSON.stringify(err).includes('spam')) {
+                    setErrorUptime();
+                    throw err;
+                }
+            }
+        },
+        reply: async (form, callback) => {
+            try {
+                global.statusAccountBot = 'good';
+                return await api.sendMessage(form, event.threadID, callback, event.messageID);
+            }
+            catch (err) {
+                if (JSON.stringify(err).includes('spam')) {
+                    setErrorUptime();
+                    throw err;
+                }
+            }
+        },
+        unsend: async (messageID, callback) => await api.unsendMessage(messageID, callback),
+        reaction: async (emoji, messageID, callback) => {
+            try {
+                global.statusAccountBot = 'good';
+                return await api.setMessageReaction(emoji, messageID, callback, true);
+            }
+            catch (err) {
+                if (JSON.stringify(err).includes('spam')) {
+                    setErrorUptime();
+                    throw err;
+                }
+            }
+        },
+        err: async (err) => await sendMessageError(err),
+        error: async (err) => await sendMessageError(err)
+    };
+}
+
+function randomString(max, onlyOnce = false, possible) {
+    if (!max || isNaN(max))
+        max = 10;
+    let text = "";
+    possible = possible || "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    for (let i = 0; i < max; i++) {
+        let random = Math.floor(Math.random() * possible.length);
+        if (onlyOnce) {
+            while (text.includes(possible[random]))
+                random = Math.floor(Math.random() * possible.length);
+        }
+        text += possible[random];
+    }
+    return text;
+}
+
+function removeHomeDir(fullPath) {
+    if (!fullPath || typeof fullPath !== "string")
+        throw new Error('The first argument (fullPath) must be a string');
+    while (fullPath.includes(process.cwd()))
+        fullPath = fullPath.replace(process.cwd(), "");
+    return fullPath;
+}
+
+function splitPage(arr, limit) {
+    const allPage = _.chunk(arr, limit);
+    return {
+        totalPage: allPage.length,
+        allPage
+    };
+}
+
+async function downloadFile(url = "", path = "") {
+    if (!url || typeof url !== "string")
+        throw new Error(`The first argument (url) must be a string`);
+    if (!path || typeof path !== "string")
+        throw new Error(`The second argument (path) must be a string`);
+    let getFile;
+    try {
+        getFile = await axios.get(url, {
+            responseType: "arraybuffer"
+        });
+    }
+    catch (err) {
+        throw new CustomError(err.response ? err.response.data : err);
+    }
+    fs.writeFileSync(path, Buffer.from(getFile.data));
+    return path;
+}
+
+async function findUid(link) {
+    try {
+        const response = await axios.post(
+            'https://seomagnifier.com/fbid',
+            new URLSearchParams({
+                'facebook': '1',
+                'sitelink': link
+            }),
+            {
+                headers: {
+                    'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    'Cookie': 'PHPSESSID=0d8feddd151431cf35ccb0522b056dc6'
+                }
+            }
+        );
+        const id = response.data;
+        if (isNaN(id)) {
+            const html = await axios.get(link);
+            const $ = cheerio.load(html.data);
+            const el = $('meta[property="al:android:url"]').attr('content');
+            if (!el) {
+                throw new Error('UID not found');
+            }
+            const number = el.split('/').pop();
+            return number;
+        }
+        return id;
+    } catch (error) {
+        throw new Error('An unexpected error occurred. Please try again.');
+    }
+}
+
+async function getStreamsFromAttachment(attachments) {
+    const streams = [];
+    for (const attachment of attachments) {
+        const url = attachment.url;
+        const ext = utils.getExtFromUrl(url);
+        const fileName = `${utils.randomString(10)}.${ext}`;
+        streams.push({
+            pending: axios({
+                url,
+                method: "GET",
+                responseType: "stream"
+            }),
+            fileName
+        });
+    }
+    for (let i = 0; i < streams.length; i++) {
+        const stream = await streams[i].pending;
+        stream.data.path = streams[i].fileName;
+        streams[i] = stream.data;
+    }
+    return streams;
+}
+
+async function getStreamFromURL(url = "", pathName = "", options = {}) {
+    if (!options && typeof pathName === "object") {
+        options = pathName;
+        pathName = "";
+    }
+    try {
+        if (!url || typeof url !== "string")
+            throw new Error(`The first argument (url) must be a string`);
+        const response = await axios({
+            url,
+            method: "GET",
+            responseType: "stream",
+            ...options
+        });
+        if (!pathName)
+            pathName = utils.randomString(10) + (response.headers["content-type"] ? '.' + getExtFromMimeType(response.headers["content-type"]) : ".noext");
+        response.data.path = pathName;
+        return response.data;
+    }
+    catch (err) {
+        throw err;
+    }
+}
+
+async function shortenURL(url) {
+    try {
+        const result = await axios.get(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(url)}`);
+        return result.data;
+    }
+    catch (err) {
+        let error;
+        if (err.response) {
+            error = new Error();
+            Object.assign(error, err.response.data);
+        }
+        else
+            error = new Error(err.message);
+    }
+}
+
+async function uploadImgbb(file) {
+    let type = "file";
+    try {
+        if (!file)
+            throw new Error('The first argument (file) must be a stream or a image url');
+        if (regCheckURL.test(file) == true)
+            type = "url";
+        if (
+            (type != "url" && (!(typeof file._read === 'function' && typeof file._readableState === 'object')))
+            || (type == "url" && !regCheckURL.test(file))
+        )
+            throw new Error('The first argument (file) must be a stream or an image URL');
+
+        const res_ = await axios({
+            method: 'GET',
+            url: 'https://imgbb.com'
+        });
+
+        const auth_token = res_.data.match(/auth_token="([^"]+)"/)[1];
+        const timestamp = Date.now();
+
+        const res = await axios({
+            method: 'POST',
+            url: 'https://imgbb.com/json',
+            headers: {
+                "content-type": "multipart/form-data"
+            },
+            data: {
+                source: file,
+                type: type,
+                action: 'upload',
+                timestamp: timestamp,
+                auth_token: auth_token
+            }
+        });
+
+        return res.data;
+    }
+    catch (err) {
+        throw new CustomError(err.response ? err.response.data : err);
+    }
+}
+
+async function uploadZippyshare(stream) {
+    const res = await axios({
+        method: 'POST',
+        url: 'https://api.zippysha.re/upload',
+        httpsAgent: agent,
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        },
+        data: {
+            file: stream
+        }
+    });
+
+    const fullUrl = res.data.data.file.url.full;
+    const res_ = await axios({
+        method: 'GET',
+        url: fullUrl,
+        httpsAgent: agent,
+        headers: {
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36 Edg/114.0.1823.43"
+        }
+    });
+
+    const downloadUrl = res_.data.match(/id="download-url"(?:.|\n)*?href="(.+?)"/)[1];
+    res.data.data.file.url.download = downloadUrl;
+
+    return res.data;
+}
+
+const drive = {
+    default: driveApi,
+    parentID: "",
+    async uploadFile(fileName, mimeType, file) {
+        if (!file && typeof fileName === "string") {
+            file = mimeType;
+            mimeType = undefined;
+        }
+        let response;
+        try {
+            response = (await driveApi.files.create({
+                resource: {
+                    name: fileName,
+                    parents: [this.parentID]
+                },
+                media: {
+                    mimeType,
+                    body: file
+                },
+                fields: "*"
+            })).data;
+        }
+        catch (err) {
+            throw new Error(err.errors.map(e => e.message).join("\n"));
+        }
+        await utils.drive.makePublic(response.id);
+        return response;
+    },
+
+    async deleteFile(id) {
+        if (!id || typeof id !== "string")
+            throw new Error('The first argument (id) must be a string');
+        try {
+            await driveApi.files.delete({
+                fileId: id
+            });
+            return true;
+        }
+        catch (err) {
+            throw new Error(err.errors.map(e => e.message).join("\n"));
+        }
+    },
+
+    getUrlDownload(id = "") {
+        if (!id || typeof id !== "string")
+            throw new Error('The first argument (id) must be a string');
+        return `https://docs.google.com/uc?id=${id}&export=download&confirm=t${googleApiKey ? `&key=${googleApiKey}` : ''}`;
+    },
+
+    async getFile(id, responseType) {
+        if (!id || typeof id !== "string")
+            throw new Error('The first argument (id) must be a string');
+        if (!responseType)
+            responseType = "arraybuffer";
+        if (typeof responseType !== "string")
+            throw new Error('The second argument (responseType) must be a string');
+
+        const response = await driveApi.files.get({
+            fileId: id,
+            alt: 'media'
+        }, {
+            responseType
+        });
+        const headersResponse = response.headers;
+        const fileName = headersResponse["content-disposition"]?.split('filename="')[1]?.split('"')[0] || `${utils.randomString(10)}.${getExtFromMimeType(headersResponse["content-type"])}`;
+
+        if (responseType == "arraybuffer")
+            return Buffer.from(response.data);
+        else if (responseType == "stream")
+            response.data.path = fileName;
+
+        const file = response.data;
+
+        return file;
+    },
+
+    async getFileName(id) {
+        if (!id || typeof id !== "string")
+            throw new Error('The first argument (id) must be a string');
+        const { fileNames: tempFileNames } = global.temp.filesOfGoogleDrive;
+        if (tempFileNames[id])
+            return tempFileNames[id];
+        try {
+            const { data: response } = await driveApi.files.get({
+                fileId: id,
+                fields: "name"
+            });
+            tempFileNames[id] = response.name;
+            return response.name;
+        }
+        catch (err) {
+            throw new Error(err.errors.map(e => e.message).join("\n"));
+        }
+    },
+
+    async makePublic(id) {
+        if (!id || typeof id !== "string")
+            throw new Error('The first argument (id) must be a string');
+        try {
+            await driveApi.permissions.create({
+                fileId: id,
+                requestBody: {
+                    role: 'reader',
+                    type: 'anyone'
+                }
+            });
+            return id;
+        }
+        catch (err) {
+            const error = new Error(err.errors.map(e => e.message).join("\n"));
+            error.name = 'CAN\'T_MAKE_PUBLIC';
+            throw new Error(err.errors.map(e => e.message).join("\n"));
+        }
+    },
+
+    async checkAndCreateParentFolder(folderName) {
+        if (!folderName || typeof folderName !== "string")
+            throw new Error('The first argument (folderName) must be a string');
+        let parentID;
+        const { data: findParentFolder } = await driveApi.files.list({
+            q: `name="${folderName}" and mimeType="application/vnd.google-apps.folder" and trashed=false`,
+            fields: '*'
+        });
+        const parentFolder = findParentFolder.files.find(i => i.ownedByMe);
+        if (!parentFolder) {
+            const { data } = await driveApi.files.create({
+                requestBody: {
+                    name: folderName,
+                    mimeType: 'application/vnd.google-apps.folder'
+                }
+            });
+            await driveApi.permissions.create({
+                fileId: data.id,
+                requestBody: {
+                    role: 'reader',
+                    type: 'anyone'
+                }
+            });
+            parentID = data.id;
+        }
+        else if (!parentFolder.shared) {
+            await driveApi.permissions.create({
+                fileId: parentFolder.id,
+                requestBody: {
+                    role: 'reader',
+                    type: 'anyone'
+                }
+            });
+            parentID = parentFolder.data.id;
+        }
+        else
+            parentID = parentFolder.id;
+        return parentID;
+    }
+};
+
+const utils = {
+    CustomError,
+    TaskQueue,
+    colors,
+    convertTime,
+    createOraDots,
+    getExtFromUrl,
+    getPrefix,
+    getText: require("./languages/makeFuncGetLangs.js"),
+    getTime,
+    getType,
+    isHexColor,
+    isNumber,
+    loading: require("./logger/loading.js"),
+    log,
+    message,
+    randomString,
+    removeHomeDir,
+    splitPage,
+    downloadFile,
+    findUid,
+    getStreamsFromAttachment,
+    getStreamFromURL,
+    Prism,
+    shortenURL,
+    uploadZippyshare,
+    uploadImgbb,
+    drive
+};
+
+module.exports = utils;
